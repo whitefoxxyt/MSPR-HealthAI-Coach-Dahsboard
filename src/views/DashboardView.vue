@@ -7,112 +7,248 @@
       </p>
     </header>
 
-    <!-- Message d'erreur -->
     <div v-if="error" class="alert alert-error" role="alert">
       <span aria-hidden="true">⚠️</span>
       {{ error }}
     </div>
 
-    <!-- Indicateur de chargement -->
     <div v-if="loading && !metrics" class="loading-spinner" role="status">
       <span class="sr-only">Chargement en cours...</span>
       <div class="spinner"></div>
     </div>
 
-    <!-- Métriques principales -->
-    <section v-else class="metrics-grid">
-      <MetricsCard
-        title="Enregistrements totaux"
-        :value="metrics?.totalRecords || 0"
-        variant="info"
-        subtitle="Dans la base de données"
-      >
-        <template #icon>
-          <span>📊</span>
-        </template>
-      </MetricsCard>
+    <section v-else class="pilotage-section">
+      <header class="section-header">
+        <div>
+          <h2 class="section-title">Dashboard de pilotage</h2>
+          <p class="section-subtitle">Métriques de qualité des données en temps réel</p>
+        </div>
+        <span class="live-badge">Temps réel · auto 30s</span>
+      </header>
 
-      <MetricsCard
-        title="Valeurs manquantes"
-        :value="metrics?.missingValues || 0"
-        variant="warning"
-        :trend="getMissingValuesTrend"
-        :trend-direction="metrics && metrics.missingValues < 300 ? 'down' : 'up'"
-      >
-        <template #icon>
-          <span>⚠️</span>
-        </template>
-      </MetricsCard>
+      <section class="metrics-grid">
+        <MetricsCard
+          title="Enregistrements totaux"
+          :value="metrics?.totalRecords || 0"
+          variant="info"
+          subtitle="Dans la base de données"
+        >
+          <template #icon>
+            <span>📊</span>
+          </template>
+        </MetricsCard>
 
-      <MetricsCard
-        title="Doublons détectés"
-        :value="metrics?.duplicates || 0"
-        variant="info"
-        :trend="getDuplicatesTrend"
-        trend-direction="down"
-      >
-        <template #icon>
-          <span>🔄</span>
-        </template>
-      </MetricsCard>
+        <MetricsCard
+          title="Valeurs manquantes"
+          :value="metrics?.missingValues || 0"
+          variant="warning"
+          :trend="getMissingValuesTrend"
+          :trend-direction="metrics && metrics.missingValues < 300 ? 'down' : 'up'"
+        >
+          <template #icon>
+            <span>⚠️</span>
+          </template>
+        </MetricsCard>
 
-      <MetricsCard
-        title="Anomalies actives"
-        :value="criticalAnomaliesCount"
-        variant="danger"
-        subtitle="Nécessitent une attention"
-      >
-        <template #icon>
-          <span>🚨</span>
-        </template>
-      </MetricsCard>
+        <MetricsCard
+          title="Doublons détectés"
+          :value="metrics?.duplicates || 0"
+          variant="info"
+          :trend="getDuplicatesTrend"
+          trend-direction="down"
+        >
+          <template #icon>
+            <span>🔄</span>
+          </template>
+        </MetricsCard>
 
-      <MetricsCard
-        title="Taux de complétude"
-        :value="metrics?.completenessRate || 0"
-        :is-percentage="true"
-        :variant="getCompletenessVariant"
-        :trend="getCompletnessTrend"
-        :trend-direction="metrics && metrics.completenessRate > 90 ? 'up' : 'down'"
-      >
-        <template #icon>
-          <span>✓</span>
-        </template>
-      </MetricsCard>
+        <MetricsCard
+          title="Anomalies actives"
+          :value="criticalAnomaliesCount"
+          variant="danger"
+          subtitle="Nécessitent une attention"
+        >
+          <template #icon>
+            <span>🚨</span>
+          </template>
+        </MetricsCard>
 
-      <MetricsCard
-        title="Score de santé"
-        :value="healthScore"
-        :is-percentage="true"
-        :variant="getHealthScoreVariant"
-        subtitle="Qualité globale des données"
-      >
-        <template #icon>
-          <span>❤️</span>
-        </template>
-      </MetricsCard>
+        <MetricsCard
+          title="Taux de complétude"
+          :value="metrics?.completenessRate || 0"
+          :is-percentage="true"
+          :variant="getCompletenessVariant"
+          :trend="getCompletnessTrend"
+          :trend-direction="metrics && metrics.completenessRate > 90 ? 'up' : 'down'"
+        >
+          <template #icon>
+            <span>✓</span>
+          </template>
+        </MetricsCard>
+
+        <MetricsCard
+          title="Score de santé"
+          :value="healthScore"
+          :is-percentage="true"
+          :variant="getHealthScoreVariant"
+          subtitle="Qualité globale des données"
+        >
+          <template #icon>
+            <span>❤️</span>
+          </template>
+        </MetricsCard>
+      </section>
+
+      <section v-if="metrics" class="quality-chart-section">
+        <h3 class="section-title section-title--small">Qualité des données</h3>
+        <p class="chart-description">
+          Suivi visuel des indicateurs clés pour identifier rapidement les zones à corriger.
+        </p>
+        <div class="quality-chart-container">
+          <canvas
+            ref="qualityChartCanvas"
+            role="img"
+            aria-label="Graphique des anomalies et problèmes de qualité"
+          />
+        </div>
+      </section>
     </section>
 
-    <section v-if="metrics" class="quality-chart-section">
-      <h2 class="section-title">Vue graphique de la qualité</h2>
-      <p class="chart-description">
-        Suivi visuel des indicateurs clés pour identifier rapidement les zones à corriger.
-      </p>
-      <div class="quality-chart-container">
-        <canvas
-          ref="qualityChartCanvas"
-          role="img"
-          aria-label="Graphique des anomalies et problèmes de qualité"
-        />
-      </div>
+    <section v-if="analytics" class="interactive-dashboard">
+      <header class="section-header section-header--interactive">
+        <div>
+          <h2 class="section-title">Tableau de bord interactif</h2>
+          <p class="section-subtitle">
+            Qualité des données, progression utilisateurs, tendances nutrition et activité, KPIs business.
+          </p>
+        </div>
+        <label class="period-filter">
+          <span class="period-filter__label">Période</span>
+          <select v-model="selectedPeriod" class="period-filter__select">
+            <option value="7d">7 jours</option>
+            <option value="30d">30 jours</option>
+            <option value="90d">90 jours</option>
+          </select>
+        </label>
+      </header>
+
+      <section class="analytics-section">
+        <h3 class="analytics-section__title">KPIs business</h3>
+        <div class="kpi-grid">
+          <MetricsCard
+            title="Engagement"
+            :value="analytics.businessKpis.engagementRate"
+            :is-percentage="true"
+            variant="success"
+            trend="+3.2%"
+            trend-direction="up"
+          >
+            <template #icon>
+              <span>🔥</span>
+            </template>
+          </MetricsCard>
+          <MetricsCard
+            title="Conversion premium"
+            :value="analytics.businessKpis.premiumConversionRate"
+            :is-percentage="true"
+            variant="info"
+            trend="+1.1%"
+            trend-direction="up"
+          >
+            <template #icon>
+              <span>💎</span>
+            </template>
+          </MetricsCard>
+          <MetricsCard
+            title="Satisfaction"
+            :value="analytics.businessKpis.satisfactionRate"
+            :is-percentage="true"
+            variant="success"
+            trend="+0.8%"
+            trend-direction="up"
+          >
+            <template #icon>
+              <span>😊</span>
+            </template>
+          </MetricsCard>
+        </div>
+      </section>
+
+      <section class="analytics-section">
+        <h3 class="analytics-section__title">Métriques utilisateurs</h3>
+        <div class="analytics-grid analytics-grid--two">
+          <article class="chart-card">
+            <h4 class="chart-card__title">Répartition par âge</h4>
+            <div class="chart-container">
+              <canvas ref="ageDistributionChartCanvas" role="img" aria-label="Répartition des utilisateurs par âge" />
+            </div>
+          </article>
+          <article class="chart-card">
+            <h4 class="chart-card__title">Répartition par objectifs</h4>
+            <div class="chart-container">
+              <canvas
+                ref="objectiveDistributionChartCanvas"
+                role="img"
+                aria-label="Répartition des utilisateurs par objectifs"
+              />
+            </div>
+          </article>
+          <article class="chart-card">
+            <h4 class="chart-card__title">Taux de progression</h4>
+            <p class="progression-rate">{{ formatPercentage(userProgressionRate) }}</p>
+            <p class="chart-note">Période : {{ selectedPeriodLabel }}</p>
+            <div class="chart-container chart-container--small">
+              <canvas ref="progressionTrendChartCanvas" role="img" aria-label="Tendance de progression utilisateurs" />
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="analytics-section">
+        <h3 class="analytics-section__title">Analyses nutritionnelles</h3>
+        <div class="analytics-grid analytics-grid--two">
+          <article class="chart-card">
+            <h4 class="chart-card__title">Tendances alimentaires</h4>
+            <div class="chart-container">
+              <canvas ref="foodTrendsChartCanvas" role="img" aria-label="Tendances alimentaires par période" />
+            </div>
+          </article>
+          <article class="chart-card">
+            <h4 class="chart-card__title">Déficits/excès par profil</h4>
+            <div class="chart-container">
+              <canvas
+                ref="nutritionBalanceChartCanvas"
+                role="img"
+                aria-label="Déficits et excès nutritionnels par profil"
+              />
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="analytics-section">
+        <h3 class="analytics-section__title">Statistiques fitness</h3>
+        <div class="analytics-grid analytics-grid--two">
+          <article class="chart-card">
+            <h4 class="chart-card__title">Exercices les plus pratiqués</h4>
+            <div class="chart-container">
+              <canvas ref="topExercisesChartCanvas" role="img" aria-label="Exercices les plus pratiqués" />
+            </div>
+          </article>
+          <article class="chart-card">
+            <h4 class="chart-card__title">Niveaux d'intensité</h4>
+            <div class="chart-container">
+              <canvas ref="intensityLevelsChartCanvas" role="img" aria-label="Niveaux d'intensité des exercices" />
+            </div>
+          </article>
+        </div>
+      </section>
     </section>
 
-    <!-- Statut des flux de données -->
     <section class="data-flows-section">
       <DataFlowStatus :flows="dataFlows" />
     </section>
 
-    <!-- Actions rapides -->
     <section class="quick-actions">
       <h2 class="section-title">Actions rapides</h2>
       <div class="actions-grid">
@@ -152,7 +288,6 @@
       </div>
     </section>
 
-    <!-- Dernière mise à jour -->
     <footer class="dashboard__footer">
       <p class="last-update">
         Dernière mise à jour : {{ lastUpdateFormatted }}
@@ -165,33 +300,65 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import { RouterLink } from 'vue-router'
+import type { AnalyticsPeriod } from '@/types'
 import MetricsCard from '@/components/common/MetricsCard.vue'
 import DataFlowStatus from '@/components/dashboard/DataFlowStatus.vue'
 import { useDataQualityStore } from '@/stores/dataQuality'
 import { useValidationStore } from '@/stores/validation'
-import { formatDate } from '@/utils/helpers'
-import { exportData } from '@/utils/helpers'
+import { exportData, formatDate, formatPercentage } from '@/utils/helpers'
 
 const dataQualityStore = useDataQualityStore()
 const validationStore = useValidationStore()
 
-// État réactif depuis les stores
 const metrics = computed(() => dataQualityStore.metrics)
 const dataFlows = computed(() => dataQualityStore.dataFlows)
+const analytics = computed(() => dataQualityStore.analytics)
 const loading = computed(() => dataQualityStore.loading)
 const error = computed(() => dataQualityStore.error)
 const healthScore = computed(() => dataQualityStore.healthScore)
 const criticalAnomaliesCount = computed(() => dataQualityStore.criticalAnomalies.length)
 const pendingAnomaliesCount = computed(() => dataQualityStore.pendingAnomalies.length)
 const pendingRecordsCount = computed(() => validationStore.pendingCount)
+
+const selectedPeriod = ref<AnalyticsPeriod>('30d')
+
 const qualityChartCanvas = ref<HTMLCanvasElement | null>(null)
+const ageDistributionChartCanvas = ref<HTMLCanvasElement | null>(null)
+const objectiveDistributionChartCanvas = ref<HTMLCanvasElement | null>(null)
+const progressionTrendChartCanvas = ref<HTMLCanvasElement | null>(null)
+const foodTrendsChartCanvas = ref<HTMLCanvasElement | null>(null)
+const nutritionBalanceChartCanvas = ref<HTMLCanvasElement | null>(null)
+const topExercisesChartCanvas = ref<HTMLCanvasElement | null>(null)
+const intensityLevelsChartCanvas = ref<HTMLCanvasElement | null>(null)
+
 let qualityChart: Chart<'bar'> | null = null
+let ageDistributionChart: Chart<'doughnut'> | null = null
+let objectiveDistributionChart: Chart<'bar'> | null = null
+let progressionTrendChart: Chart<'line'> | null = null
+let foodTrendsChart: Chart<'line'> | null = null
+let nutritionBalanceChart: Chart<'bar'> | null = null
+let topExercisesChart: Chart<'bar'> | null = null
+let intensityLevelsChart: Chart<'doughnut'> | null = null
+let autoRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const lastUpdateFormatted = computed(() => {
   return metrics.value?.lastUpdate ? formatDate(metrics.value.lastUpdate) : '-'
 })
 
-// Tendances et variants
+const selectedPeriodLabel = computed(() => {
+  const labels: Record<AnalyticsPeriod, string> = {
+    '7d': '7 derniers jours',
+    '30d': '30 derniers jours',
+    '90d': '90 derniers jours',
+  }
+  return labels[selectedPeriod.value]
+})
+
+const userProgressionRate = computed(() => {
+  if (!analytics.value) return 0
+  return analytics.value.progressionRateByPeriod[selectedPeriod.value]
+})
+
 const getMissingValuesTrend = computed(() => {
   const count = metrics.value?.missingValues || 0
   return count < 250 ? '-5%' : '+3%'
@@ -235,7 +402,6 @@ const qualityChartData = computed(() => ({
   ],
 }))
 
-// Actions
 async function refreshAll() {
   await Promise.all([
     dataQualityStore.refreshAll(),
@@ -283,29 +449,294 @@ function renderQualityChart() {
   })
 }
 
+function renderAgeDistributionChart() {
+  if (!ageDistributionChartCanvas.value || !analytics.value) return
+  ageDistributionChart?.destroy()
+
+  ageDistributionChart = new Chart(ageDistributionChartCanvas.value, {
+    type: 'doughnut',
+    data: {
+      labels: analytics.value.ageDistribution.map((item) => item.label),
+      datasets: [
+        {
+          data: analytics.value.ageDistribution.map((item) => item.value),
+          backgroundColor: ['#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'],
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+      },
+    },
+  })
+}
+
+function renderObjectiveDistributionChart() {
+  if (!objectiveDistributionChartCanvas.value || !analytics.value) return
+  objectiveDistributionChart?.destroy()
+
+  objectiveDistributionChart = new Chart(objectiveDistributionChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: analytics.value.objectiveDistribution.map((item) => item.label),
+      datasets: [
+        {
+          label: 'Part des utilisateurs (%)',
+          data: analytics.value.objectiveDistribution.map((item) => item.value),
+          backgroundColor: '#2563eb',
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: 100,
+        },
+      },
+    },
+  })
+}
+
+function renderProgressionTrendChart() {
+  if (!progressionTrendChartCanvas.value || !analytics.value) return
+  progressionTrendChart?.destroy()
+
+  const trend = analytics.value.userProgressionTrend[selectedPeriod.value]
+  progressionTrendChart = new Chart(progressionTrendChartCanvas.value, {
+    type: 'line',
+    data: {
+      labels: trend.map((point) => point.label),
+      datasets: [
+        {
+          label: 'Progression (%)',
+          data: trend.map((point) => point.value),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.2)',
+          fill: true,
+          tension: 0.35,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+        },
+      },
+    },
+  })
+}
+
+function renderFoodTrendsChart() {
+  if (!foodTrendsChartCanvas.value || !analytics.value) return
+  foodTrendsChart?.destroy()
+
+  const trend = analytics.value.foodTrends[selectedPeriod.value]
+  foodTrendsChart = new Chart(foodTrendsChartCanvas.value, {
+    type: 'line',
+    data: {
+      labels: trend.map((point) => point.label),
+      datasets: [
+        {
+          label: 'Score alimentaire',
+          data: trend.map((point) => point.value),
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22, 163, 74, 0.2)',
+          fill: true,
+          tension: 0.35,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+        },
+      },
+    },
+  })
+}
+
+function renderNutritionBalanceChart() {
+  if (!nutritionBalanceChartCanvas.value || !analytics.value) return
+  nutritionBalanceChart?.destroy()
+
+  nutritionBalanceChart = new Chart(nutritionBalanceChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: analytics.value.nutritionBalanceByProfile.map((item) => item.profile),
+      datasets: [
+        {
+          label: 'Déficits',
+          data: analytics.value.nutritionBalanceByProfile.map((item) => item.deficit),
+          backgroundColor: '#f59e0b',
+          borderRadius: 8,
+        },
+        {
+          label: 'Excès',
+          data: analytics.value.nutritionBalanceByProfile.map((item) => item.excess),
+          backgroundColor: '#ef4444',
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  })
+}
+
+function renderTopExercisesChart() {
+  if (!topExercisesChartCanvas.value || !analytics.value) return
+  topExercisesChart?.destroy()
+
+  topExercisesChart = new Chart(topExercisesChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: analytics.value.topExercises.map((item) => item.label),
+      datasets: [
+        {
+          label: 'Sessions',
+          data: analytics.value.topExercises.map((item) => item.value),
+          backgroundColor: '#6366f1',
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  })
+}
+
+function renderIntensityLevelsChart() {
+  if (!intensityLevelsChartCanvas.value || !analytics.value) return
+  intensityLevelsChart?.destroy()
+
+  intensityLevelsChart = new Chart(intensityLevelsChartCanvas.value, {
+    type: 'doughnut',
+    data: {
+      labels: analytics.value.intensityLevels.map((item) => item.label),
+      datasets: [
+        {
+          data: analytics.value.intensityLevels.map((item) => item.value),
+          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+      },
+    },
+  })
+}
+
+function renderAnalyticsCharts() {
+  renderAgeDistributionChart()
+  renderObjectiveDistributionChart()
+  renderProgressionTrendChart()
+  renderFoodTrendsChart()
+  renderNutritionBalanceChart()
+  renderTopExercisesChart()
+  renderIntensityLevelsChart()
+}
+
 async function handleExport() {
-  try {
-    await exportData({
-      format: 'json',
-      includeMetadata: true,
-    })
-  } catch (error) {
-    console.error('Export error:', error)
-  }
+  await exportData({
+    format: 'json',
+    includeMetadata: true,
+  })
 }
 
 watch(qualityChartData, () => {
   renderQualityChart()
 }, { deep: true })
 
-// Chargement initial
+watch([analytics, selectedPeriod], () => {
+  renderAnalyticsCharts()
+}, { deep: true })
+
 onMounted(async () => {
   await refreshAll()
   renderQualityChart()
+  renderAnalyticsCharts()
+  autoRefreshInterval = setInterval(() => {
+    void refreshAll()
+  }, 30000)
 })
 
 onBeforeUnmount(() => {
   qualityChart?.destroy()
+  ageDistributionChart?.destroy()
+  objectiveDistributionChart?.destroy()
+  progressionTrendChart?.destroy()
+  foodTrendsChart?.destroy()
+  nutritionBalanceChart?.destroy()
+  topExercisesChart?.destroy()
+  intensityLevelsChart?.destroy()
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval)
+  }
 })
 </script>
 
@@ -365,7 +796,86 @@ onBeforeUnmount(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pilotage-section,
+.interactive-dashboard,
+.quality-chart-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-header--interactive {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.section-title--small {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-subtitle {
+  margin: 0;
+  color: #6b7280;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+}
+
+.period-filter {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.period-filter__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.period-filter__select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.period-filter__select:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .metrics-grid {
@@ -376,15 +886,11 @@ onBeforeUnmount(() => {
 }
 
 .quality-chart-section {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  margin-bottom: 0;
 }
 
 .chart-description {
-  margin: -1rem 0 1rem 0;
+  margin: 0 0 1rem 0;
   font-size: 0.875rem;
   color: #6b7280;
 }
@@ -393,19 +899,77 @@ onBeforeUnmount(() => {
   height: 320px;
 }
 
+.analytics-section {
+  margin-bottom: 2rem;
+}
+
+.analytics-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.analytics-section__title {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.kpi-grid,
+.analytics-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.analytics-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.chart-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 1rem;
+}
+
+.chart-card__title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chart-note {
+  margin: 0 0 0.5rem 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+.progression-rate {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  line-height: 1;
+}
+
+.chart-container {
+  height: 260px;
+}
+
+.chart-container--small {
+  height: 220px;
+}
+
 .data-flows-section {
   margin-bottom: 2rem;
 }
 
 .quick-actions {
   margin-bottom: 2rem;
-}
-
-.section-title {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #111827;
 }
 
 .actions-grid {
@@ -481,7 +1045,6 @@ onBeforeUnmount(() => {
   color: #6b7280;
 }
 
-/* Accessibilité */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -503,11 +1066,11 @@ onBeforeUnmount(() => {
   .spinner {
     animation: none;
   }
-  
+
   .action-card {
     transition: none;
   }
-  
+
   .action-card:hover {
     transform: none;
   }
@@ -517,12 +1080,19 @@ onBeforeUnmount(() => {
   .dashboard {
     padding: 1rem;
   }
-  
+
   .dashboard__title {
     font-size: 1.5rem;
   }
-  
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .metrics-grid,
+  .kpi-grid,
+  .analytics-grid,
   .actions-grid {
     grid-template-columns: 1fr;
   }

@@ -1,20 +1,39 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+
+const showDashboardLayout = computed(() => !route.meta.authPage)
+const currentUserLabel = computed(() => authStore.currentUser?.username || 'admin')
+
+onMounted(() => {
+  authStore.hydrateFromStorage()
+})
+
+function handleLogout() {
+  authStore.logout()
+  router.push({ name: 'auth' })
+}
 </script>
 
 <template>
-  <div id="app">
-    <!-- Navigation principale -->
+  <RouterView v-if="!showDashboardLayout" />
+
+  <div v-else id="app">
     <nav class="main-nav" role="navigation" aria-label="Navigation principale">
       <div class="nav-container">
-        <RouterLink to="/" class="nav-brand">
+        <RouterLink to="/dashboard" class="nav-brand">
           <span class="nav-brand__icon" aria-hidden="true">❤️</span>
           <span class="nav-brand__text">HealthAI Coach</span>
         </RouterLink>
 
         <ul class="nav-menu">
           <li class="nav-item">
-            <RouterLink to="/" class="nav-link" active-class="nav-link--active">
+            <RouterLink to="/dashboard" class="nav-link" active-class="nav-link--active">
               📊 Dashboard
             </RouterLink>
           </li>
@@ -29,15 +48,18 @@ import { RouterLink, RouterView } from 'vue-router'
             </RouterLink>
           </li>
         </ul>
+
+        <div class="nav-actions">
+          <span class="nav-user">{{ currentUserLabel }}</span>
+          <button class="nav-logout" type="button" @click="handleLogout">Déconnexion</button>
+        </div>
       </div>
     </nav>
 
-    <!-- Contenu principal -->
     <main class="main-content" role="main">
       <RouterView />
     </main>
 
-    <!-- Footer -->
     <footer class="main-footer" role="contentinfo">
       <p class="footer-text">
         © 2026 HealthAI Coach - Dashboard d'administration
@@ -92,7 +114,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .nav-brand {
@@ -122,6 +144,8 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
+  flex: 1;
+  justify-content: center;
 }
 
 .nav-item {
@@ -157,6 +181,41 @@ body {
 .main-content {
   flex: 1;
   background: #f9fafb;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.65rem;
+  border-radius: 9999px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.nav-logout {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-logout:hover {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 /* Footer */
@@ -214,11 +273,17 @@ body {
     flex-direction: column;
     gap: 0;
     width: 100%;
+    justify-content: flex-start;
   }
 
   .nav-link {
     border-radius: 0;
     padding: 0.875rem 1rem;
+  }
+
+  .nav-actions {
+    justify-content: space-between;
+    padding: 0.75rem 0;
   }
 }
 

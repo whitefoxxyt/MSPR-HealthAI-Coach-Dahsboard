@@ -12,7 +12,9 @@ import type {
   PaginationParams,
   ExportOptions,
   ValidationStatus,
+  AnalyticsOverview,
 } from '@/types'
+import { authSessionManager } from '@/services/auth'
 
 // Configuration de l'API
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
@@ -27,11 +29,11 @@ class ApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
+    const accessToken = authSessionManager.getAccessToken()
     
     const defaultHeaders = {
       'Content-Type': 'application/json',
-      // TODO: Ajouter l'authentification JWT ici
-      // 'Authorization': `Bearer ${token}`
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     }
 
     const response = await fetch(url, {
@@ -161,6 +163,95 @@ const mockData = {
     },
   ] as DataFlowStats[],
 
+  analytics: {
+    ageDistribution: [
+      { label: '18-25 ans', value: 24 },
+      { label: '26-35 ans', value: 38 },
+      { label: '36-50 ans', value: 26 },
+      { label: '50+ ans', value: 12 },
+    ],
+    objectiveDistribution: [
+      { label: 'Perte de poids', value: 41 },
+      { label: 'Masse musculaire', value: 27 },
+      { label: 'Forme générale', value: 22 },
+      { label: 'Santé métabolique', value: 10 },
+    ],
+    progressionRateByPeriod: {
+      '7d': 62.4,
+      '30d': 74.8,
+      '90d': 81.3,
+    },
+    userProgressionTrend: {
+      '7d': [
+        { label: 'J-6', value: 55 },
+        { label: 'J-5', value: 56 },
+        { label: 'J-4', value: 58 },
+        { label: 'J-3', value: 59 },
+        { label: 'J-2', value: 60 },
+        { label: 'J-1', value: 61 },
+        { label: 'J', value: 62.4 },
+      ],
+      '30d': [
+        { label: 'S1', value: 61 },
+        { label: 'S2', value: 66 },
+        { label: 'S3', value: 70 },
+        { label: 'S4', value: 74.8 },
+      ],
+      '90d': [
+        { label: 'M-3', value: 64 },
+        { label: 'M-2', value: 72 },
+        { label: 'M-1', value: 77 },
+        { label: 'M', value: 81.3 },
+      ],
+    },
+    foodTrends: {
+      '7d': [
+        { label: 'Lun', value: 68 },
+        { label: 'Mar', value: 71 },
+        { label: 'Mer', value: 73 },
+        { label: 'Jeu', value: 70 },
+        { label: 'Ven', value: 74 },
+        { label: 'Sam', value: 72 },
+        { label: 'Dim', value: 76 },
+      ],
+      '30d': [
+        { label: 'S1', value: 67 },
+        { label: 'S2', value: 69 },
+        { label: 'S3', value: 72 },
+        { label: 'S4', value: 75 },
+      ],
+      '90d': [
+        { label: 'M-3', value: 65 },
+        { label: 'M-2', value: 70 },
+        { label: 'M-1', value: 73 },
+        { label: 'M', value: 76 },
+      ],
+    },
+    nutritionBalanceByProfile: [
+      { profile: 'Perte de poids', deficit: 31, excess: 12 },
+      { profile: 'Masse musculaire', deficit: 18, excess: 23 },
+      { profile: 'Forme générale', deficit: 14, excess: 17 },
+      { profile: 'Santé métabolique', deficit: 22, excess: 15 },
+    ],
+    topExercises: [
+      { label: 'Marche rapide', value: 4620 },
+      { label: 'Renforcement', value: 3575 },
+      { label: 'Vélo', value: 2840 },
+      { label: 'Yoga', value: 2130 },
+      { label: 'Course', value: 1985 },
+    ],
+    intensityLevels: [
+      { label: 'Faible', value: 34 },
+      { label: 'Modérée', value: 46 },
+      { label: 'Élevée', value: 20 },
+    ],
+    businessKpis: {
+      engagementRate: 72.6,
+      premiumConversionRate: 18.4,
+      satisfactionRate: 91.2,
+    },
+  } as AnalyticsOverview,
+
   records: [
     {
       id: 'rec-1',
@@ -225,6 +316,13 @@ export const dataQualityApi = {
       return Promise.resolve(mockData.dataFlows)
     }
     return apiClient.get<DataFlowStats[]>('/data-quality/flows')
+  },
+
+  async getAnalyticsOverview(): Promise<AnalyticsOverview> {
+    if (USE_MOCK) {
+      return Promise.resolve(mockData.analytics)
+    }
+    return apiClient.get<AnalyticsOverview>('/analytics/overview')
   },
 
   async updateAnomaly(id: string, data: Partial<DataAnomaly>): Promise<DataAnomaly> {

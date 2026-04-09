@@ -56,6 +56,19 @@ export interface AdminUser {
   email: string
 }
 
+// Tokens de session d'administration
+export interface AuthTokens {
+  accessToken: string
+  refreshToken: string
+  expiresAt: string
+}
+
+// Session d'authentification persistée localement
+export interface AuthSession {
+  user: AdminUser
+  tokens: AuthTokens
+}
+
 // Statistiques des flux de données
 export interface DataFlowStats {
   name: string
@@ -64,6 +77,42 @@ export interface DataFlowStats {
   recordsToday: number
   lastSync: string
   errorRate: number
+}
+
+export type AnalyticsPeriod = '7d' | '30d' | '90d'
+
+export interface AnalyticsDistributionItem {
+  label: string
+  value: number
+}
+
+export interface AnalyticsTrendPoint {
+  label: string
+  value: number
+}
+
+export interface NutritionBalanceByProfile {
+  profile: string
+  deficit: number
+  excess: number
+}
+
+export interface BusinessKpis {
+  engagementRate: number
+  premiumConversionRate: number
+  satisfactionRate: number
+}
+
+export interface AnalyticsOverview {
+  ageDistribution: AnalyticsDistributionItem[]
+  objectiveDistribution: AnalyticsDistributionItem[]
+  progressionRateByPeriod: Record<AnalyticsPeriod, number>
+  userProgressionTrend: Record<AnalyticsPeriod, AnalyticsTrendPoint[]>
+  foodTrends: Record<AnalyticsPeriod, AnalyticsTrendPoint[]>
+  nutritionBalanceByProfile: NutritionBalanceByProfile[]
+  topExercises: AnalyticsDistributionItem[]
+  intensityLevels: AnalyticsDistributionItem[]
+  businessKpis: BusinessKpis
 }
 
 // Options d'export

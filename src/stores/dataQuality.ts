@@ -4,7 +4,13 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DataQualityMetrics, DataAnomaly, DataFlowStats, PaginationParams } from '@/types'
+import type {
+  DataQualityMetrics,
+  DataAnomaly,
+  DataFlowStats,
+  PaginationParams,
+  AnalyticsOverview,
+} from '@/types'
 import { dataQualityApi } from '@/services/api'
 
 export const useDataQualityStore = defineStore('dataQuality', () => {
@@ -12,6 +18,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
   const metrics = ref<DataQualityMetrics | null>(null)
   const anomalies = ref<DataAnomaly[]>([])
   const dataFlows = ref<DataFlowStats[]>([])
+  const analytics = ref<AnalyticsOverview | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const totalAnomalies = ref(0)
@@ -87,6 +94,19 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     }
   }
 
+  async function fetchAnalytics() {
+    loading.value = true
+    error.value = null
+    try {
+      analytics.value = await dataQualityApi.getAnalyticsOverview()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Erreur lors du chargement des analytics'
+      console.error('Error fetching analytics:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function updateAnomaly(id: string, data: Partial<DataAnomaly>) {
     loading.value = true
     error.value = null
@@ -130,6 +150,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
       fetchMetrics(),
       fetchAnomalies(),
       fetchDataFlows(),
+      fetchAnalytics(),
     ])
   }
 
@@ -138,6 +159,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     metrics,
     anomalies,
     dataFlows,
+    analytics,
     loading,
     error,
     totalAnomalies,
@@ -153,6 +175,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     fetchMetrics,
     fetchAnomalies,
     fetchDataFlows,
+    fetchAnalytics,
     updateAnomaly,
     deleteAnomaly,
     refreshAll,

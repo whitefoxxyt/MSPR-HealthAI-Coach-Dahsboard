@@ -7,6 +7,7 @@ Interface web d'administration pour la gestion de la qualité des données du pr
 Ce dashboard permet aux équipes internes de :
 
 - 📊 **Consulter les métriques de qualité** : valeurs manquantes, doublons, anomalies, statut des flux
+- 📈 **Analyser les performances globales** : progression utilisateurs, nutrition, activité, KPIs business
 - 🧹 **Nettoyer les données** : correction manuelle, édition inline, suppression, normalisation
 - ✓ **Gérer le workflow de validation** : approuver ou rejeter les données en attente
 - 📥 **Exporter les données** : export au format JSON ou CSV
@@ -161,8 +162,9 @@ Pour connecter l'application à l'API backend Java :
 2. Le service API (`src/services/api.ts`) utilise automatiquement les vrais endpoints :
    - `GET /data-quality/metrics` : Récupère les métriques
    - `GET /data-quality/anomalies` : Liste les anomalies
-   - `GET /data-quality/flows` : Statut des flux de données
-   - `PUT /data-quality/anomalies/:id` : Mise à jour d'une anomalie
+    - `GET /data-quality/flows` : Statut des flux de données
+    - `GET /analytics/overview` : Données analytics (utilisateurs, nutrition, fitness, business)
+    - `PUT /data-quality/anomalies/:id` : Mise à jour d'une anomalie
    - `DELETE /data-quality/anomalies/:id` : Suppression d'une anomalie
    - `GET /validation/records` : Liste des enregistrements à valider
    - `PUT /validation/records/:id` : Mise à jour d'un enregistrement
@@ -191,6 +193,7 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 - Métriques de qualité des données en temps réel
 - Score de santé global
 - Statut des flux de données (actif, inactif, erreur)
+- Visualisations analytics (utilisateurs, nutrition, fitness, business)
 - Actions rapides vers les autres sections
 
 ### 2. Nettoyage des données
@@ -261,7 +264,6 @@ Pour toute question ou problème :
 
 ## 🔮 Roadmap
 
-- [ ] Ajout de graphiques de tendances (Chart.js)
 - [ ] Notifications en temps réel (WebSocket)
 - [ ] Mode sombre
 - [ ] Personnalisation du dashboard par utilisateur
