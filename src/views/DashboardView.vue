@@ -93,6 +93,20 @@
       </MetricsCard>
     </section>
 
+    <section v-if="metrics" class="quality-chart-section">
+      <h2 class="section-title">Vue graphique de la qualité</h2>
+      <p class="chart-description">
+        Suivi visuel des indicateurs clés pour identifier rapidement les zones à corriger.
+      </p>
+      <div class="quality-chart-container">
+        <canvas
+          ref="qualityChartCanvas"
+          role="img"
+          aria-label="Graphique des anomalies et problèmes de qualité"
+        />
+      </div>
+    </section>
+
     <!-- Statut des flux de données -->
     <section class="data-flows-section">
       <DataFlowStatus :flows="dataFlows" />
@@ -148,7 +162,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Chart from 'chart.js/auto'
 import { RouterLink } from 'vue-router'
 import MetricsCard from '@/components/common/MetricsCard.vue'
 import DataFlowStatus from '@/components/dashboard/DataFlowStatus.vue'
@@ -169,6 +184,8 @@ const healthScore = computed(() => dataQualityStore.healthScore)
 const criticalAnomaliesCount = computed(() => dataQualityStore.criticalAnomalies.length)
 const pendingAnomaliesCount = computed(() => dataQualityStore.pendingAnomalies.length)
 const pendingRecordsCount = computed(() => validationStore.pendingCount)
+const qualityChartCanvas = ref<HTMLCanvasElement | null>(null)
+let qualityChart: Chart<'bar'> | null = null
 
 const lastUpdateFormatted = computed(() => {
   return metrics.value?.lastUpdate ? formatDate(metrics.value.lastUpdate) : '-'
@@ -201,12 +218,69 @@ const getHealthScoreVariant = computed(() => {
   return 'danger'
 })
 
+const qualityChartData = computed(() => ({
+  labels: [
+    'Valeurs manquantes',
+    'Doublons',
+    'Anomalies en attente',
+    'Anomalies critiques',
+    'Validations en attente',
+  ],
+  values: [
+    metrics.value?.missingValues || 0,
+    metrics.value?.duplicates || 0,
+    pendingAnomaliesCount.value,
+    criticalAnomaliesCount.value,
+    pendingRecordsCount.value,
+  ],
+}))
+
 // Actions
 async function refreshAll() {
   await Promise.all([
     dataQualityStore.refreshAll(),
     validationStore.fetchRecords(),
   ])
+}
+
+function renderQualityChart() {
+  if (!qualityChartCanvas.value) return
+
+  if (qualityChart) {
+    qualityChart.destroy()
+  }
+
+  qualityChart = new Chart(qualityChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: qualityChartData.value.labels,
+      datasets: [
+        {
+          label: 'Nombre de cas',
+          data: qualityChartData.value.values,
+          backgroundColor: ['#f59e0b', '#3b82f6', '#6366f1', '#ef4444', '#14b8a6'],
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0,
+          },
+        },
+      },
+    },
+  })
 }
 
 async function handleExport() {
@@ -220,9 +294,18 @@ async function handleExport() {
   }
 }
 
+watch(qualityChartData, () => {
+  renderQualityChart()
+}, { deep: true })
+
 // Chargement initial
 onMounted(async () => {
   await refreshAll()
+  renderQualityChart()
+})
+
+onBeforeUnmount(() => {
+  qualityChart?.destroy()
 })
 </script>
 
@@ -290,6 +373,24 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+}
+
+.quality-chart-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.chart-description {
+  margin: -1rem 0 1rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.quality-chart-container {
+  height: 320px;
 }
 
 .data-flows-section {

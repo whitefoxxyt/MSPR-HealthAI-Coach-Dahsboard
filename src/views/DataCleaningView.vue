@@ -63,6 +63,35 @@
           <font-awesome-icon :icon="['fas', 'list']" />
           {{ totalAnomalies }} anomalie(s)
         </span>
+
+        <div class="action-control">
+          <label for="export-format" class="sr-only">Format d'export</label>
+          <select id="export-format" v-model="exportFormat" class="filter-select filter-select--compact">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+          <button class="btn btn-secondary" @click="handleExportData">
+            Exporter
+          </button>
+        </div>
+
+        <div class="action-control">
+          <label for="import-format" class="sr-only">Format d'import</label>
+          <select id="import-format" v-model="importFormat" class="filter-select filter-select--compact">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+          <button class="btn btn-secondary" @click="openImportDialog">
+            Importer
+          </button>
+          <input
+            ref="importFileInput"
+            class="file-input-hidden"
+            type="file"
+            :accept="importAccept"
+            @change="handleImportFileChange"
+          />
+        </div>
       </div>
     </section>
 
@@ -226,16 +255,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useDataQualityStore } from '@/stores/dataQuality'
 import type { DataAnomaly, AnomalyType } from '@/types'
-import { formatDate } from '@/utils/helpers'
+import { formatDate, downloadFile } from '@/utils/helpers'
 
 const dataQualityStore = useDataQualityStore()
 
 // État local
 const severityFilter = ref<'all' | 'high' | 'medium' | 'low'>('all')
 const typeFilter = ref<'all' | AnomalyType>('all')
+const exportFormat = ref<'csv' | 'json'>('csv')
+const importFormat = ref<'csv' | 'json'>('csv')
 const editingAnomaly = ref<DataAnomaly | null>(null)
 const editedValue = ref('')
+const localError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
+const importFileInput = ref<HTMLInputElement | null>(null)
 
 // Computed depuis le store
 const anomalies = computed(() => {
@@ -253,20 +286,75 @@ const anomalies = computed(() => {
 })
 
 const loading = computed(() => dataQualityStore.loading)
-const error = computed(() => dataQualityStore.error)
+const error = computed(() => localError.value ?? dataQualityStore.error)
 const totalAnomalies = computed(() => dataQualityStore.totalAnomalies)
 const currentPage = computed(() => dataQualityStore.currentPage)
 const pageSize = computed(() => dataQualityStore.pageSize)
 const totalPages = computed(() => Math.ceil(totalAnomalies.value / pageSize.value))
+const importAccept = computed(() =>
+  importFormat.value === 'csv' ? '.csv,text/csv' : '.json,application/json',
+)
 
 // Actions
 async function refreshData() {
+  localError.value = null
   await dataQualityStore.fetchAnomalies()
 }
 
 function handleFilterChange() {
   dataQualityStore.currentPage = 1
   refreshData()
+}
+
+async function handleExportData() {
+  try {
+    localError.value = null
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `healthai-anomalies-${timestamp}.${exportFormat.value}`
+
+    if (exportFormat.value === 'json') {
+      const content = JSON.stringify(anomalies.value, null, 2)
+      downloadFile(new Blob([content], { type: 'application/json' }), filename)
+    } else {
+      const csv = convertAnomaliesToCsv(anomalies.value)
+      downloadFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), filename)
+    }
+
+    showSuccessMessage(`Export ${exportFormat.value.toUpperCase()} généré avec succès`)
+  } catch (e) {
+    console.error('Error exporting anomalies:', e)
+    showErrorMessage('Erreur lors de l\'export des anomalies')
+  }
+}
+
+function openImportDialog() {
+  localError.value = null
+  importFileInput.value?.click()
+}
+
+async function handleImportFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  try {
+    localError.value = null
+    const fileContent = await file.text()
+    const importedAnomalies = importFormat.value === 'json'
+      ? parseAnomaliesFromJson(fileContent)
+      : parseAnomaliesFromCsv(fileContent)
+
+    dataQualityStore.anomalies = importedAnomalies
+    dataQualityStore.totalAnomalies = importedAnomalies.length
+    dataQualityStore.currentPage = 1
+
+    showSuccessMessage(`${importedAnomalies.length} anomalie(s) importée(s)`)
+  } catch (e) {
+    console.error('Error importing anomalies:', e)
+    showErrorMessage('Fichier invalide. Vérifiez le format sélectionné puis réessayez.')
+  } finally {
+    target.value = ''
+  }
 }
 
 function startEdit(anomaly: DataAnomaly) {
@@ -325,10 +413,227 @@ function goToPage(page: number) {
 }
 
 function showSuccessMessage(message: string) {
+  localError.value = null
   successMessage.value = message
   setTimeout(() => {
     successMessage.value = null
   }, 3000)
+}
+
+function showErrorMessage(message: string) {
+  successMessage.value = null
+  localError.value = message
+  setTimeout(() => {
+    localError.value = null
+  }, 5000)
+}
+
+function convertAnomaliesToCsv(data: DataAnomaly[]): string {
+  const headers = [
+    'id',
+    'type',
+    'entityType',
+    'entityId',
+    'field',
+    'currentValue',
+    'suggestedValue',
+    'detectedAt',
+    'severity',
+    'status',
+  ]
+
+  const rows = data.map((anomaly) => [
+    anomaly.id,
+    anomaly.type,
+    anomaly.entityType,
+    anomaly.entityId,
+    anomaly.field,
+    anomaly.currentValue ?? '',
+    anomaly.suggestedValue ?? '',
+    anomaly.detectedAt,
+    anomaly.severity,
+    anomaly.status,
+  ])
+
+  return [headers, ...rows]
+    .map((row) => row.map(escapeCsvValue).join(','))
+    .join('\n')
+}
+
+function escapeCsvValue(value: string): string {
+  if (!value.includes(',') && !value.includes('"') && !value.includes('\n')) {
+    return value
+  }
+  return `"${value.replaceAll('"', '""')}"`
+}
+
+function parseAnomaliesFromJson(content: string): DataAnomaly[] {
+  const parsed: unknown = JSON.parse(content)
+  if (!Array.isArray(parsed)) {
+    throw new Error('JSON import must be an array')
+  }
+  return parsed.map((item, index) => normalizeImportedAnomaly(item, index))
+}
+
+function parseAnomaliesFromCsv(content: string): DataAnomaly[] {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length <= 1) {
+    return []
+  }
+
+  const headerLine = lines[0]
+  if (!headerLine) {
+    return []
+  }
+
+  const headers = splitCsvLine(headerLine).map(normalizeHeader)
+  const rows = lines.slice(1)
+
+  return rows.map((line, index) => {
+    const values = splitCsvLine(line)
+    const rowData: Record<string, unknown> = {}
+
+    headers.forEach((header, headerIndex) => {
+      rowData[header] = values[headerIndex] ?? ''
+    })
+
+    return normalizeImportedAnomaly(rowData, index)
+  })
+}
+
+function splitCsvLine(line: string): string[] {
+  const values: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index]
+
+    if (char === '"') {
+      const nextChar = line[index + 1]
+      if (inQuotes && nextChar === '"') {
+        current += '"'
+        index += 1
+        continue
+      }
+      inQuotes = !inQuotes
+      continue
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current)
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  values.push(current)
+  return values
+}
+
+function normalizeHeader(header: string): string {
+  const compactHeader = header.replace(/\s+/g, '').toLowerCase()
+  const aliases: Record<string, string> = {
+    id: 'id',
+    type: 'type',
+    entitytype: 'entityType',
+    entity_id: 'entityId',
+    entityid: 'entityId',
+    field: 'field',
+    currentvalue: 'currentValue',
+    suggestedvalue: 'suggestedValue',
+    detectedat: 'detectedAt',
+    severity: 'severity',
+    status: 'status',
+  }
+
+  return aliases[compactHeader] ?? header
+}
+
+function normalizeImportedAnomaly(raw: unknown, index: number): DataAnomaly {
+  const record = toRecord(raw)
+  const now = new Date().toISOString()
+  const id = readRecordValue(record, ['id']) || `imported-anomaly-${Date.now()}-${index}`
+  const type = normalizeAnomalyType(readRecordValue(record, ['type']))
+  const entityType = normalizeEntityType(readRecordValue(record, ['entityType', 'entity_type']))
+  const entityId = readRecordValue(record, ['entityId', 'entity_id']) || `entity-${index + 1}`
+  const field = readRecordValue(record, ['field']) || 'unknownField'
+  const currentValue = readRecordValue(record, ['currentValue', 'current_value'])
+  const suggestedValue = readRecordValue(record, ['suggestedValue', 'suggested_value'])
+  const detectedAtRaw = readRecordValue(record, ['detectedAt', 'detected_at'])
+  const severity = normalizeSeverity(readRecordValue(record, ['severity']))
+  const status = normalizeStatus(readRecordValue(record, ['status']))
+
+  return {
+    id,
+    type,
+    entityType,
+    entityId,
+    field,
+    currentValue: currentValue || null,
+    suggestedValue: suggestedValue || undefined,
+    detectedAt: isValidDate(detectedAtRaw) ? detectedAtRaw : now,
+    severity,
+    status,
+  }
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('Anomaly row must be an object')
+  }
+  return value as Record<string, unknown>
+}
+
+function readRecordValue(record: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key]
+    if (value === undefined || value === null) continue
+
+    if (typeof value === 'string') {
+      return value.trim()
+    }
+
+    return String(value)
+  }
+
+  return ''
+}
+
+function normalizeAnomalyType(value: string): AnomalyType {
+  const validTypes: AnomalyType[] = ['missing_value', 'duplicate', 'outlier', 'format_error']
+  return validTypes.includes(value as AnomalyType) ? (value as AnomalyType) : 'format_error'
+}
+
+function normalizeEntityType(value: string): DataAnomaly['entityType'] {
+  const validEntityTypes: DataAnomaly['entityType'][] = ['user', 'nutrition', 'exercise', 'biometric']
+  return validEntityTypes.includes(value as DataAnomaly['entityType'])
+    ? (value as DataAnomaly['entityType'])
+    : 'user'
+}
+
+function normalizeSeverity(value: string): DataAnomaly['severity'] {
+  const validSeverities: DataAnomaly['severity'][] = ['low', 'medium', 'high']
+  return validSeverities.includes(value as DataAnomaly['severity'])
+    ? (value as DataAnomaly['severity'])
+    : 'medium'
+}
+
+function normalizeStatus(value: string): DataAnomaly['status'] {
+  const validStatus: DataAnomaly['status'][] = ['pending', 'approved', 'rejected']
+  return validStatus.includes(value as DataAnomaly['status'])
+    ? (value as DataAnomaly['status'])
+    : 'pending'
+}
+
+function isValidDate(value: string): value is string {
+  return value.length > 0 && !Number.isNaN(new Date(value).getTime())
 }
 
 // Helpers pour les icônes et labels
@@ -510,6 +815,17 @@ onMounted(async () => {
   background: #2563eb;
 }
 
+.btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
 .filter-select {
   padding: 0.625rem 1rem;
   border: 1px solid #d1d5db;
@@ -530,6 +846,16 @@ onMounted(async () => {
   outline-offset: 2px;
 }
 
+.filter-select--compact {
+  min-width: 6rem;
+}
+
+.action-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .anomaly-count {
   display: flex;
   align-items: center;
@@ -541,6 +867,10 @@ onMounted(async () => {
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
+}
+
+.file-input-hidden {
+  display: none;
 }
 
 /* Loading */
@@ -821,6 +1151,22 @@ onMounted(async () => {
   .action-bar__right {
     width: 100%;
   }
+
+  .action-control {
+    width: 100%;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,7 +2,7 @@
  * Utilitaires pour le formatage et la conversion de données
  */
 
-import type { ExportOptions, DataRecord } from '@/types'
+import type { ExportOptions } from '@/types'
 import { exportApi } from '@/services/api'
 
 /**
