@@ -31,14 +31,9 @@ src/
 │   └── ValidationView.vue    # Workflow de validation/approbation
 ├── components/               # Composants réutilisables
 │   ├── common/               # Composants génériques
-│   │   ├── MetricsCard.vue   # Carte d'affichage de métrique
-│   │   ├── DataTable.vue     # Table de données avec pagination
-│   │   └── ExportButton.vue  # Bouton d'export JSON/CSV
+│   │   └── MetricsCard.vue   # Carte d'affichage de métrique
 │   ├── dashboard/            # Composants du dashboard
 │   │   └── DataFlowStatus.vue # Statut des flux de données
-│   ├── data-cleaning/        # Composants de nettoyage
-│   │   └── AnomaliesTable.vue # Table des anomalies
-│   └── validation/           # Composants de validation
 ├── stores/                   # Stores Pinia
 │   ├── dataQuality.ts        # Store pour métriques et anomalies
 │   ├── validation.ts         # Store pour workflow de validation

@@ -168,15 +168,6 @@ body {
   color: #111827;
 }
 
-.nav-link--active {
-  background: #3b82f6;
-  color: white;
-}
-
-.nav-link--active:hover {
-  background: #2563eb;
-}
-
 /* Contenu principal */
 .main-content {
   flex: 1;
@@ -239,22 +230,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Skip link pour accessibilité */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #3b82f6;
-  color: white;
-  padding: 0.5rem 1rem;
-  text-decoration: none;
-  z-index: 100;
-}
-
-.skip-link:focus {
-  top: 0;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .nav-container {
@@ -285,11 +260,6 @@ body {
     justify-content: space-between;
     padding: 0.75rem 0;
   }
-}
-
-/* Animation pour les transitions de page */
-.router-link-active {
-  /* Style déjà géré par nav-link--active */
 }
 
 /* Print styles */
