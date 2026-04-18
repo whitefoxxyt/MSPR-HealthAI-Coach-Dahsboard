@@ -2,16 +2,10 @@ import type { AdminUser, AuthSession } from '@/types'
 
 const AUTH_SESSION_STORAGE_KEY = 'healthai.auth.session'
 const ACCESS_TOKEN_TTL_MS = 1000 * 60 * 60 // 1h
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:3000'
 
 function isClientEnvironment(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
-}
-
-function createMockToken(prefix: string): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `${prefix}_${crypto.randomUUID()}`
-  }
-  return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`
 }
 
 function createTokenExpirationDate(ttlInMs: number): string {
@@ -49,24 +43,27 @@ function isExpired(expiresAt: string): boolean {
   return parsedDate <= Date.now()
 }
 
-function createMockUserFromEmail(email: string): AdminUser {
-  const [username] = email.split('@')
-  return {
-    id: `admin_${Date.now()}`,
-    username: username || 'admin',
-    email,
-    role: 'admin',
+async function fetchJwtToken(): Promise<string> {
+  const response = await fetch(`${AUTH_BASE_URL}/api/jwt`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  if (!response.ok) {
+    throw new Error('Impossible de récupérer le token JWT')
   }
+  const data = await response.json() as { token?: string; error?: string }
+  if (!data.token) {
+    throw new Error(data.error || 'Token JWT absent de la réponse')
+  }
+  return data.token
 }
 
-function createMockSession(email: string): AuthSession {
+function buildAdminUser(betterAuthUser: { id: string; name?: string; email: string }): AdminUser {
   return {
-    user: createMockUserFromEmail(email),
-    tokens: {
-      accessToken: createMockToken('access'),
-      refreshToken: createMockToken('refresh'),
-      expiresAt: createTokenExpirationDate(ACCESS_TOKEN_TTL_MS),
-    },
+    id: betterAuthUser.id,
+    username: betterAuthUser.name ?? betterAuthUser.email.split('@')[0] ?? betterAuthUser.email,
+    email: betterAuthUser.email,
+    role: 'admin',
   }
 }
 
@@ -106,44 +103,124 @@ export const authSessionManager = {
   },
 }
 
+export async function tryBootstrapFromCookie(): Promise<AuthSession | null> {
+  try {
+    const sessionResponse = await fetch(`${AUTH_BASE_URL}/api/session`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (!sessionResponse.ok) return null
+
+    const sessionData = await sessionResponse.json() as {
+      user?: { id: string; name?: string; email: string }
+    }
+    if (!sessionData?.user) return null
+
+    const jwtToken = await fetchJwtToken()
+
+    return {
+      user: buildAdminUser(sessionData.user),
+      tokens: {
+        accessToken: jwtToken,
+        refreshToken: sessionData.user.id,
+        expiresAt: createTokenExpirationDate(ACCESS_TOKEN_TTL_MS),
+      },
+    }
+  } catch {
+    return null
+  }
+}
+
 export const authApi = {
-  // Point de branchement Better Auth: remplacer les implémentations mock ci-dessous
-  // par les appels authClient.signIn/signUp/forgotPassword/refresh.
   async login(email: string, password: string): Promise<AuthSession> {
     if (!email || !password) {
       throw new Error('Email et mot de passe requis')
     }
-    return Promise.resolve(createMockSession(email))
+
+    const signInResponse = await fetch(`${AUTH_BASE_URL}/api/auth/sign-in/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    })
+
+    if (!signInResponse.ok) {
+      const err = await signInResponse.json().catch(() => ({})) as { message?: string }
+      throw new Error(err.message || `Erreur de connexion (${signInResponse.status})`)
+    }
+
+    const signInData = await signInResponse.json() as {
+      user: { id: string; name?: string; email: string }
+      token?: string
+    }
+
+    const jwtToken = await fetchJwtToken()
+
+    return {
+      user: buildAdminUser(signInData.user),
+      tokens: {
+        accessToken: jwtToken,
+        refreshToken: signInData.token || signInData.user.id,
+        expiresAt: createTokenExpirationDate(ACCESS_TOKEN_TTL_MS),
+      },
+    }
   },
 
-  async register(name: string, email: string, password: string): Promise<AuthSession> {
+  async register(name: string, email: string, password: string): Promise<void> {
     if (!name || !email || !password) {
       throw new Error('Nom, email et mot de passe requis')
     }
-    return Promise.resolve({
-      ...createMockSession(email),
-      user: {
-        ...createMockUserFromEmail(email),
-        username: name,
-      },
+
+    const signUpResponse = await fetch(`${AUTH_BASE_URL}/api/auth/sign-up/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, email, password }),
     })
+
+    if (!signUpResponse.ok) {
+      const err = await signUpResponse.json().catch(() => ({})) as { message?: string }
+      throw new Error(err.message || `Erreur d'inscription (${signUpResponse.status})`)
+    }
+    // Email verification required — no session returned until the user clicks the link
   },
 
   async requestPasswordReset(email: string): Promise<void> {
     if (!email) {
       throw new Error('Email requis pour réinitialiser le mot de passe')
     }
-    return Promise.resolve()
+
+    const redirectTo = isClientEnvironment()
+      ? `${window.location.origin}/reset-password`
+      : 'http://localhost:5173/reset-password'
+
+    const response = await fetch(`${AUTH_BASE_URL}/api/auth/forget-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, redirectTo }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({})) as { message?: string }
+      throw new Error(err.message || 'Erreur lors de la demande de réinitialisation')
+    }
   },
 
   async refreshAccessToken(refreshToken: string): Promise<AuthSession['tokens']> {
-    if (!refreshToken) {
-      throw new Error('Refresh token manquant')
-    }
-    return Promise.resolve({
-      accessToken: createMockToken('access'),
+    const jwtToken = await fetchJwtToken()
+    return {
+      accessToken: jwtToken,
       refreshToken,
       expiresAt: createTokenExpirationDate(ACCESS_TOKEN_TTL_MS),
+    }
+  },
+
+  async logout(): Promise<void> {
+    await fetch(`${AUTH_BASE_URL}/api/auth/sign-out`, {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {
+      // Best-effort: clear local session even if sign-out request fails
     })
   },
 }

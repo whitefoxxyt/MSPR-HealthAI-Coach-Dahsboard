@@ -72,11 +72,77 @@ export interface AuthSession {
 // Statistiques des flux de données
 export interface DataFlowStats {
   name: string
-  type: 'user' | 'nutrition' | 'exercise' | 'biometric'
+  type: 'user' | 'nutrition' | 'exercise' | 'biometric' | 'diet'
   status: DataFlowStatus
   recordsToday: number
   lastSync: string
   errorRate: number
+}
+
+// Recommandations alimentaires
+export interface DietRecommendationItem {
+  id: number
+  externalPatientId: string
+  age: number
+  gender: string
+  weightKg: number
+  heightCm: number
+  bmi: number
+  diseaseType: string
+  severity: string
+  physicalActivityLevel: string
+  dailyCaloricIntake: number
+  cholesterolMgDl: number
+  bloodPressureMmhg: number
+  glucoseMgDl: number
+  dietaryRestrictions: string
+  allergies: string
+  preferredCuisine: string
+  weeklyExerciseHours: number
+  adherenceToDietPlan: number
+  nutrientImbalanceScore: number
+  dietRecommendation: string
+  source: string
+  createdAt: string
+}
+
+export interface DietDistributionItem {
+  label: string
+  value: number
+}
+
+export interface DietRecommendationStats {
+  totalCount: number
+  avgAdherenceRate: number
+  avgNutrientImbalanceScore: number
+  diseaseTypeDistribution: DietDistributionItem[]
+  severityDistribution: DietDistributionItem[]
+  activityLevelDistribution: DietDistributionItem[]
+  dietRecommendationDistribution: DietDistributionItem[]
+}
+
+// Rapport ETL
+export interface EtlPipelineReport {
+  name: string
+  status: string
+  rowsRead: number
+  rowsInserted: number
+  rowsRejected: number
+  rejectionRate: number
+  durationS: number
+  tables: Record<string, number>
+  topRejectionReasons: Record<string, number>
+}
+
+export interface EtlReport {
+  generatedAt: string
+  pipelines: EtlPipelineReport[]
+  totals: {
+    rowsRead: number
+    rowsInserted: number
+    rowsRejected: number
+    rejectionRate: number
+  }
 }
 
 export type AnalyticsPeriod = '7d' | '30d' | '90d'

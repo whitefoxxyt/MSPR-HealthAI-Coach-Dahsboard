@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { AuthSession } from '@/types'
-import { authApi, authSessionManager } from '@/services/auth'
+import { authApi, authSessionManager, tryBootstrapFromCookie } from '@/services/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const session = ref<AuthSession | null>(authSessionManager.getSession())
@@ -49,11 +49,11 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     clearMessages()
     try {
-      const nextSession = await authApi.register(name, email, password)
-      setSession(nextSession)
-      infoMessage.value = 'Compte créé avec succès'
+      await authApi.register(name, email, password)
+      // Email verification required — no active session yet
+      infoMessage.value = 'Compte créé ! Vérifiez votre email pour activer votre accès.'
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Erreur lors de l’inscription'
+      error.value = e instanceof Error ? e.message : 'Erreur lors de l\'inscription'
       throw e
     } finally {
       loading.value = false
@@ -95,7 +95,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function bootstrapFromSession(): Promise<boolean> {
+    try {
+      const nextSession = await tryBootstrapFromCookie()
+      if (nextSession) {
+        setSession(nextSession)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
+  async function logout() {
+    await authApi.logout()
     setSession(null)
     infoMessage.value = 'Déconnexion effectuée'
   }
@@ -113,6 +127,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     requestPasswordReset,
     refreshSession,
+    bootstrapFromSession,
     logout,
   }
 })

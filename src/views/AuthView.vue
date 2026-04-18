@@ -7,7 +7,7 @@
         <p class="auth-subtitle">{{ panelSubtitle }}</p>
       </header>
 
-      <nav class="auth-tabs" aria-label="Modes d’authentification">
+      <nav class="auth-tabs" aria-label="Modes d'authentification">
         <button
           class="auth-tab"
           :class="{ 'auth-tab--active': mode === 'login' }"
@@ -132,7 +132,7 @@ const forgotEmail = ref('')
 const panelTitle = computed(() => {
   if (mode.value === 'register') return 'Créer un compte administrateur'
   if (mode.value === 'forgot') return 'Réinitialiser votre mot de passe'
-  return 'Connexion à l’espace administration'
+  return "Connexion à l'espace administration"
 })
 
 const panelSubtitle = computed(() => {
@@ -167,9 +167,10 @@ async function submitRegister() {
   }
   try {
     await authStore.register(registerForm.value.name, registerForm.value.email, registerForm.value.password)
-    await router.push({ name: 'dashboard' })
+    // Email verification is required — stay on auth page, the store sets infoMessage
+    switchMode('login')
   } catch (e) {
-    localError.value = e instanceof Error ? e.message : 'Erreur lors de l’inscription'
+    localError.value = e instanceof Error ? e.message : 'Erreur lors de l\'inscription'
   }
 }
 

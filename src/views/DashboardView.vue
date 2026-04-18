@@ -245,6 +245,103 @@
       </section>
     </section>
 
+    <section v-if="dietStats" class="interactive-dashboard">
+      <header class="section-header">
+        <div>
+          <h2 class="section-title">Recommandations alimentaires</h2>
+          <p class="section-subtitle">Données issues du pipeline ETL diet_recommendations</p>
+        </div>
+      </header>
+
+      <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+        <MetricsCard
+          title="Patients total"
+          :value="dietStats.totalCount"
+          variant="info"
+          subtitle="Enregistrements diet"
+        >
+          <template #icon><span>🥗</span></template>
+        </MetricsCard>
+        <MetricsCard
+          title="Adherence moyenne"
+          :value="dietStats.avgAdherenceRate"
+          :is-percentage="true"
+          variant="success"
+          subtitle="Suivi du plan alimentaire"
+        >
+          <template #icon><span>📈</span></template>
+        </MetricsCard>
+        <MetricsCard
+          title="Score déséquilibre"
+          :value="dietStats.avgNutrientImbalanceScore"
+          variant="warning"
+          subtitle="Score moyen d'imbalance nutritionnelle"
+        >
+          <template #icon><span>⚖️</span></template>
+        </MetricsCard>
+      </div>
+
+      <div class="analytics-grid analytics-grid--two">
+        <article class="chart-card">
+          <h4 class="chart-card__title">Répartition par maladie</h4>
+          <div class="chart-container">
+            <canvas ref="dietDiseaseChartCanvas" role="img" aria-label="Répartition des patients par type de maladie" />
+          </div>
+        </article>
+        <article class="chart-card">
+          <h4 class="chart-card__title">Recommandations prescrites</h4>
+          <div class="chart-container">
+            <canvas ref="dietRecommendationChartCanvas" role="img" aria-label="Distribution des recommandations alimentaires" />
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section v-if="etlReport" class="interactive-dashboard">
+      <header class="section-header">
+        <div>
+          <h2 class="section-title">Rapport ETL</h2>
+          <p class="section-subtitle">Dernière exécution : {{ etlReport.generatedAt }}</p>
+        </div>
+        <div class="etl-totals">
+          <span class="etl-stat">Lus : <strong>{{ etlReport.totals.rowsRead }}</strong></span>
+          <span class="etl-stat">Insérés : <strong>{{ etlReport.totals.rowsInserted }}</strong></span>
+          <span class="etl-stat etl-stat--warn">Rejetés : <strong>{{ etlReport.totals.rowsRejected }}</strong></span>
+        </div>
+      </header>
+
+      <div class="etl-pipelines">
+        <article
+          v-for="pipeline in etlReport.pipelines"
+          :key="pipeline.name"
+          class="etl-pipeline-card"
+          :class="{ 'etl-pipeline-card--error': pipeline.status !== 'OK' }"
+        >
+          <div class="etl-pipeline-header">
+            <span class="etl-pipeline-name">{{ pipeline.name }}</span>
+            <span class="etl-status-badge" :class="pipeline.status === 'OK' ? 'etl-status-badge--ok' : 'etl-status-badge--err'">
+              {{ pipeline.status }}
+            </span>
+          </div>
+          <dl class="etl-pipeline-stats">
+            <div class="etl-stat-row"><dt>Lus</dt><dd>{{ pipeline.rowsRead }}</dd></div>
+            <div class="etl-stat-row"><dt>Insérés</dt><dd>{{ pipeline.rowsInserted }}</dd></div>
+            <div class="etl-stat-row"><dt>Rejetés</dt><dd>{{ pipeline.rowsRejected }}</dd></div>
+            <div class="etl-stat-row"><dt>Taux rejet</dt><dd>{{ (pipeline.rejectionRate * 100).toFixed(1) }}%</dd></div>
+            <div class="etl-stat-row"><dt>Durée</dt><dd>{{ pipeline.durationS.toFixed(2) }}s</dd></div>
+          </dl>
+          <div v-if="Object.keys(pipeline.topRejectionReasons).length > 0" class="etl-rejections">
+            <p class="etl-rejections-title">Raisons de rejet :</p>
+            <ul>
+              <li v-for="(count, reason) in pipeline.topRejectionReasons" :key="reason">
+                {{ reason }} ({{ count }})
+              </li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section class="data-flows-section">
       <DataFlowStatus :flows="dataFlows" />
     </section>
@@ -313,6 +410,8 @@ const validationStore = useValidationStore()
 const metrics = computed(() => dataQualityStore.metrics)
 const dataFlows = computed(() => dataQualityStore.dataFlows)
 const analytics = computed(() => dataQualityStore.analytics)
+const dietStats = computed(() => dataQualityStore.dietStats)
+const etlReport = computed(() => dataQualityStore.etlReport)
 const loading = computed(() => dataQualityStore.loading)
 const error = computed(() => dataQualityStore.error)
 const healthScore = computed(() => dataQualityStore.healthScore)
@@ -330,6 +429,8 @@ const foodTrendsChartCanvas = ref<HTMLCanvasElement | null>(null)
 const nutritionBalanceChartCanvas = ref<HTMLCanvasElement | null>(null)
 const topExercisesChartCanvas = ref<HTMLCanvasElement | null>(null)
 const intensityLevelsChartCanvas = ref<HTMLCanvasElement | null>(null)
+const dietDiseaseChartCanvas = ref<HTMLCanvasElement | null>(null)
+const dietRecommendationChartCanvas = ref<HTMLCanvasElement | null>(null)
 
 let qualityChart: Chart<'bar'> | null = null
 let ageDistributionChart: Chart<'doughnut'> | null = null
@@ -339,6 +440,8 @@ let foodTrendsChart: Chart<'line'> | null = null
 let nutritionBalanceChart: Chart<'bar'> | null = null
 let topExercisesChart: Chart<'bar'> | null = null
 let intensityLevelsChart: Chart<'doughnut'> | null = null
+let dietDiseaseChart: Chart<'doughnut'> | null = null
+let dietRecommendationChart: Chart<'bar'> | null = null
 let autoRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const lastUpdateFormatted = computed(() => {
@@ -691,6 +794,57 @@ function renderIntensityLevelsChart() {
   })
 }
 
+function renderDietDiseaseChart() {
+  if (!dietDiseaseChartCanvas.value || !dietStats.value) return
+  dietDiseaseChart?.destroy()
+
+  dietDiseaseChart = new Chart(dietDiseaseChartCanvas.value, {
+    type: 'doughnut',
+    data: {
+      labels: dietStats.value.diseaseTypeDistribution.map((item) => item.label),
+      datasets: [
+        {
+          data: dietStats.value.diseaseTypeDistribution.map((item) => item.value),
+          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+    },
+  })
+}
+
+function renderDietRecommendationChart() {
+  if (!dietRecommendationChartCanvas.value || !dietStats.value) return
+  dietRecommendationChart?.destroy()
+
+  dietRecommendationChart = new Chart(dietRecommendationChartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels: dietStats.value.dietRecommendationDistribution.map((item) => item.label),
+      datasets: [
+        {
+          label: 'Patients',
+          data: dietStats.value.dietRecommendationDistribution.map((item) => item.value),
+          backgroundColor: '#10b981',
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } },
+    },
+  })
+}
+
 function renderAnalyticsCharts() {
   renderAgeDistributionChart()
   renderObjectiveDistributionChart()
@@ -699,6 +853,11 @@ function renderAnalyticsCharts() {
   renderNutritionBalanceChart()
   renderTopExercisesChart()
   renderIntensityLevelsChart()
+}
+
+function renderDietCharts() {
+  renderDietDiseaseChart()
+  renderDietRecommendationChart()
 }
 
 async function handleExport() {
@@ -716,10 +875,15 @@ watch([analytics, selectedPeriod], () => {
   renderAnalyticsCharts()
 }, { deep: true })
 
+watch(dietStats, () => {
+  renderDietCharts()
+}, { deep: true })
+
 onMounted(async () => {
   await refreshAll()
   renderQualityChart()
   renderAnalyticsCharts()
+  renderDietCharts()
   autoRefreshInterval = setInterval(() => {
     void refreshAll()
   }, 30000)
@@ -734,6 +898,8 @@ onBeforeUnmount(() => {
   nutritionBalanceChart?.destroy()
   topExercisesChart?.destroy()
   intensityLevelsChart?.destroy()
+  dietDiseaseChart?.destroy()
+  dietRecommendationChart?.destroy()
   if (autoRefreshInterval) {
     clearInterval(autoRefreshInterval)
   }
@@ -1042,6 +1208,111 @@ onBeforeUnmount(() => {
 .last-update {
   margin: 0;
   font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.etl-totals {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.etl-stat {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.etl-stat--warn strong {
+  color: #dc2626;
+}
+
+.etl-pipelines {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.etl-pipeline-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.etl-pipeline-card--error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.etl-pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.etl-pipeline-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.etl-status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.etl-status-badge--ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.etl-status-badge--err {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.etl-pipeline-stats {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.etl-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+}
+
+.etl-stat-row dt {
+  color: #6b7280;
+}
+
+.etl-stat-row dd {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+}
+
+.etl-rejections {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.etl-rejections-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.etl-rejections ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
   color: #6b7280;
 }
 

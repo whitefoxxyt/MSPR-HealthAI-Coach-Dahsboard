@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { authSessionManager } from '@/services/auth'
+import { useAuthStore } from '@/stores/auth'
 import AuthView from '@/views/AuthView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import DataCleaningView from '@/views/DataCleaningView.vue'
@@ -52,15 +53,28 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const isAuthenticated = authSessionManager.hasValidSession()
 
-  if (to.meta.requireAuth && !isAuthenticated) {
-    return { name: 'auth' }
+  if (isAuthenticated) {
+    if (to.meta.guestOnly) return { name: 'dashboard' }
+    return true
   }
 
-  if (to.meta.guestOnly && isAuthenticated) {
-    return { name: 'dashboard' }
+  // Pas de session locale — tente de bootstrapper depuis le cookie Better Auth
+  // (cas post-vérification email : Better Auth a créé une session cookie mais
+  // le localStorage est vide)
+  if (to.meta.requireAuth || to.meta.guestOnly) {
+    const store = useAuthStore()
+    const bootstrapped = await store.bootstrapFromSession()
+    if (bootstrapped) {
+      if (to.meta.guestOnly) return { name: 'dashboard' }
+      return true
+    }
+  }
+
+  if (to.meta.requireAuth) {
+    return { name: 'auth' }
   }
 
   return true

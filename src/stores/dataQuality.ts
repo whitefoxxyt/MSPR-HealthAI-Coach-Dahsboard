@@ -10,8 +10,10 @@ import type {
   DataFlowStats,
   PaginationParams,
   AnalyticsOverview,
+  DietRecommendationStats,
+  EtlReport,
 } from '@/types'
-import { dataQualityApi } from '@/services/api'
+import { dataQualityApi, dietRecommendationApi } from '@/services/api'
 
 export const useDataQualityStore = defineStore('dataQuality', () => {
   // État
@@ -19,6 +21,8 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
   const anomalies = ref<DataAnomaly[]>([])
   const dataFlows = ref<DataFlowStats[]>([])
   const analytics = ref<AnalyticsOverview | null>(null)
+  const dietStats = ref<DietRecommendationStats | null>(null)
+  const etlReport = ref<EtlReport | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const totalAnomalies = ref(0)
@@ -145,12 +149,30 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     }
   }
 
+  async function fetchDietStats() {
+    try {
+      dietStats.value = await dietRecommendationApi.getStats()
+    } catch (e) {
+      console.error('Error fetching diet stats:', e)
+    }
+  }
+
+  async function fetchEtlReport() {
+    try {
+      etlReport.value = await dataQualityApi.getEtlReport()
+    } catch (e) {
+      console.error('Error fetching ETL report:', e)
+    }
+  }
+
   async function refreshAll() {
     await Promise.all([
       fetchMetrics(),
       fetchAnomalies(),
       fetchDataFlows(),
       fetchAnalytics(),
+      fetchDietStats(),
+      fetchEtlReport(),
     ])
   }
 
@@ -160,6 +182,8 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     anomalies,
     dataFlows,
     analytics,
+    dietStats,
+    etlReport,
     loading,
     error,
     totalAnomalies,
@@ -176,6 +200,8 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
     fetchAnomalies,
     fetchDataFlows,
     fetchAnalytics,
+    fetchDietStats,
+    fetchEtlReport,
     updateAnomaly,
     deleteAnomaly,
     refreshAll,
