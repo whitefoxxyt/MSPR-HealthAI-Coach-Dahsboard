@@ -34,8 +34,10 @@
           Actualiser
         </button>
         
-        <select 
-          v-model="severityFilter" 
+        <label for="severity-filter" class="sr-only">Filtrer par sévérité</label>
+        <select
+          id="severity-filter"
+          v-model="severityFilter"
           class="filter-select"
           @change="handleFilterChange"
         >
@@ -45,8 +47,10 @@
           <option value="low">Faible</option>
         </select>
 
-        <select 
-          v-model="typeFilter" 
+        <label for="type-filter" class="sr-only">Filtrer par type d'anomalie</label>
+        <select
+          id="type-filter"
+          v-model="typeFilter"
           class="filter-select"
           @change="handleFilterChange"
         >
@@ -152,12 +156,13 @@
                 </span>
               </td>
               <td>
-                <input 
+                <input
                   v-if="editingAnomaly?.id === anomaly.id"
                   v-model="editedValue"
                   type="text"
                   class="input-inline"
                   :placeholder="anomaly.suggestedValue || 'Nouvelle valeur'"
+                  :aria-label="`Nouvelle valeur pour ${anomaly.field}`"
                 />
                 <span v-else class="suggested-value">
                   {{ anomaly.suggestedValue || '-' }}
@@ -177,43 +182,48 @@
               <td>
                 <div class="action-buttons">
                   <template v-if="editingAnomaly?.id === anomaly.id">
-                    <button 
+                    <button
                       class="btn-icon btn-icon--success"
                       @click="saveEdit"
+                      :aria-label="`Enregistrer la modification de ${anomaly.field}`"
                       title="Enregistrer"
                     >
-                      <font-awesome-icon :icon="['fas', 'check']" />
+                      <font-awesome-icon :icon="['fas', 'check']" aria-hidden="true" />
                     </button>
-                    <button 
+                    <button
                       class="btn-icon btn-icon--secondary"
                       @click="cancelEdit"
+                      aria-label="Annuler la modification"
                       title="Annuler"
                     >
-                      <font-awesome-icon :icon="['fas', 'xmark']" />
+                      <font-awesome-icon :icon="['fas', 'xmark']" aria-hidden="true" />
                     </button>
                   </template>
                   <template v-else>
-                    <button 
+                    <button
                       class="btn-icon btn-icon--primary"
                       @click="startEdit(anomaly)"
+                      :aria-label="`Éditer la valeur de ${anomaly.field}`"
                       title="Éditer"
                     >
-                      <font-awesome-icon :icon="['fas', 'pen']" />
+                      <font-awesome-icon :icon="['fas', 'pen']" aria-hidden="true" />
                     </button>
-                    <button 
+                    <button
                       class="btn-icon btn-icon--success"
                       @click="applyFix(anomaly)"
+                      :aria-label="`Appliquer la correction suggérée pour ${anomaly.field}`"
                       title="Appliquer la correction"
                       :disabled="!anomaly.suggestedValue"
                     >
-                      <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+                      <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" aria-hidden="true" />
                     </button>
-                    <button 
+                    <button
                       class="btn-icon btn-icon--danger"
                       @click="deleteAnomaly(anomaly.id)"
+                      :aria-label="`Supprimer l'anomalie de ${anomaly.field}`"
                       title="Supprimer"
                     >
-                      <font-awesome-icon :icon="['fas', 'trash']" />
+                      <font-awesome-icon :icon="['fas', 'trash']" aria-hidden="true" />
                     </button>
                   </template>
                 </div>
@@ -224,27 +234,27 @@
       </div>
 
       <!-- Pagination -->
-      <nav v-if="totalPages > 1" class="pagination" aria-label="Pagination">
-        <button 
+      <nav v-if="totalPages > 1" class="pagination" aria-label="Pagination des anomalies">
+        <button
           class="pagination__btn"
           :disabled="currentPage === 1"
           @click="goToPage(currentPage - 1)"
         >
-          <font-awesome-icon :icon="['fas', 'chevron-left']" />
+          <font-awesome-icon :icon="['fas', 'chevron-left']" aria-hidden="true" />
           Précédent
         </button>
-        
-        <span class="pagination__info">
+
+        <span class="pagination__info" aria-live="polite">
           Page {{ currentPage }} sur {{ totalPages }}
         </span>
-        
-        <button 
+
+        <button
           class="pagination__btn"
           :disabled="currentPage === totalPages"
           @click="goToPage(currentPage + 1)"
         >
           Suivant
-          <font-awesome-icon :icon="['fas', 'chevron-right']" />
+          <font-awesome-icon :icon="['fas', 'chevron-right']" aria-hidden="true" />
         </button>
       </nav>
     </section>

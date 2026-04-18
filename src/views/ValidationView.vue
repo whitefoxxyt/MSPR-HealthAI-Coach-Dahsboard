@@ -203,10 +203,10 @@
 
             <!-- Data preview -->
             <div class="data-preview">
-              <h4 class="data-preview__title">
-                <font-awesome-icon :icon="['fas', 'code']" />
+              <h3 class="data-preview__title">
+                <font-awesome-icon :icon="['fas', 'code']" aria-hidden="true" />
                 Données
-              </h4>
+              </h3>
               <div class="data-preview__content">
                 <template v-if="editingRecord?.id === record.id">
                   <textarea 
@@ -302,35 +302,37 @@
       </div>
 
       <!-- Pagination -->
-      <nav v-if="totalPages > 1" class="pagination" aria-label="Pagination">
-        <button 
+      <nav v-if="totalPages > 1" class="pagination" aria-label="Pagination des enregistrements">
+        <button
           class="pagination__btn"
           :disabled="currentPage === 1"
           @click="goToPage(currentPage - 1)"
         >
-          <font-awesome-icon :icon="['fas', 'chevron-left']" />
+          <font-awesome-icon :icon="['fas', 'chevron-left']" aria-hidden="true" />
           Précédent
         </button>
-        
+
         <div class="pagination__pages">
           <button
             v-for="page in visiblePages"
             :key="page"
             class="pagination__page"
             :class="{ 'pagination__page--active': page === currentPage }"
+            :aria-label="`Aller à la page ${page}`"
+            :aria-current="page === currentPage ? 'page' : undefined"
             @click="goToPage(page)"
           >
             {{ page }}
           </button>
         </div>
-        
-        <button 
+
+        <button
           class="pagination__btn"
           :disabled="currentPage === totalPages"
           @click="goToPage(currentPage + 1)"
         >
           Suivant
-          <font-awesome-icon :icon="['fas', 'chevron-right']" />
+          <font-awesome-icon :icon="['fas', 'chevron-right']" aria-hidden="true" />
         </button>
       </nav>
     </section>

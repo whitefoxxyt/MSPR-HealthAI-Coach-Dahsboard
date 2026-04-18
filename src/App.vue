@@ -24,6 +24,8 @@ function handleLogout() {
   <RouterView v-if="!showDashboardLayout" />
 
   <div v-else id="app">
+    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+
     <nav class="main-nav" role="navigation" aria-label="Navigation principale">
       <div class="nav-container">
         <RouterLink to="/dashboard" class="nav-brand">
@@ -34,17 +36,17 @@ function handleLogout() {
         <ul class="nav-menu">
           <li class="nav-item">
             <RouterLink to="/dashboard" class="nav-link" active-class="nav-link--active">
-              📊 Dashboard
+              <span aria-hidden="true">📊</span> Dashboard
             </RouterLink>
           </li>
           <li class="nav-item">
             <RouterLink to="/data-cleaning" class="nav-link" active-class="nav-link--active">
-              🧹 Nettoyage
+              <span aria-hidden="true">🧹</span> Nettoyage
             </RouterLink>
           </li>
           <li class="nav-item">
             <RouterLink to="/validation" class="nav-link" active-class="nav-link--active">
-              ✓ Validation
+              <span aria-hidden="true">✓</span> Validation
             </RouterLink>
           </li>
         </ul>
@@ -56,7 +58,7 @@ function handleLogout() {
       </div>
     </nav>
 
-    <main class="main-content" role="main">
+    <main id="main-content" class="main-content" role="main" tabindex="-1">
       <RouterView />
     </main>
 
@@ -228,6 +230,32 @@ body {
 .nav-brand:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* Skip link : visible uniquement au focus clavier (RGAA 12.7) */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 1000;
+  padding: 0.75rem 1rem;
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 6px 0;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 0;
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+#main-content:focus {
+  outline: none;
 }
 
 /* Responsive */
