@@ -7,9 +7,9 @@
       </p>
     </header>
 
-    <div v-if="error" class="alert alert-error" role="alert">
+    <div v-if="error || exportError" class="alert alert-error" role="alert">
       <span aria-hidden="true">⚠️</span>
-      {{ error }}
+      {{ exportError || error }}
     </div>
 
     <div v-if="loading && !metrics" class="loading-spinner" role="status">
@@ -860,11 +860,22 @@ function renderDietCharts() {
   renderDietRecommendationChart()
 }
 
+const exportError = ref<string | null>(null)
+
 async function handleExport() {
-  await exportData({
-    format: 'json',
-    includeMetadata: true,
-  })
+  exportError.value = null
+  try {
+    await exportData({
+      format: 'json',
+      includeMetadata: true,
+    })
+  } catch (e) {
+    console.error('Export error:', e)
+    exportError.value = e instanceof Error ? e.message : "Impossible d'exporter les données"
+    setTimeout(() => {
+      exportError.value = null
+    }, 5000)
+  }
 }
 
 watch(qualityChartData, () => {

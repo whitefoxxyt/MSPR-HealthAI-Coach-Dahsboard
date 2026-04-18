@@ -185,6 +185,7 @@
                     <button
                       class="btn-icon btn-icon--success"
                       @click="saveEdit"
+                      :disabled="loading"
                       :aria-label="`Enregistrer la modification de ${anomaly.field}`"
                       title="Enregistrer"
                     >
@@ -193,6 +194,7 @@
                     <button
                       class="btn-icon btn-icon--secondary"
                       @click="cancelEdit"
+                      :disabled="loading"
                       aria-label="Annuler la modification"
                       title="Annuler"
                     >
@@ -203,6 +205,7 @@
                     <button
                       class="btn-icon btn-icon--primary"
                       @click="startEdit(anomaly)"
+                      :disabled="loading"
                       :aria-label="`Éditer la valeur de ${anomaly.field}`"
                       title="Éditer"
                     >
@@ -211,15 +214,16 @@
                     <button
                       class="btn-icon btn-icon--success"
                       @click="applyFix(anomaly)"
+                      :disabled="loading || !anomaly.suggestedValue"
                       :aria-label="`Appliquer la correction suggérée pour ${anomaly.field}`"
                       title="Appliquer la correction"
-                      :disabled="!anomaly.suggestedValue"
                     >
                       <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" aria-hidden="true" />
                     </button>
                     <button
                       class="btn-icon btn-icon--danger"
                       @click="deleteAnomaly(anomaly.id)"
+                      :disabled="loading"
                       :aria-label="`Supprimer l'anomalie de ${anomaly.field}`"
                       title="Supprimer"
                     >
@@ -258,14 +262,26 @@
         </button>
       </nav>
     </section>
+
+    <ConfirmDialog
+      :open="deleteDialog.open"
+      title="Supprimer l'anomalie"
+      :message="`Cette action supprimera définitivement l'anomalie${deleteDialog.field ? ' sur le champ « ' + deleteDialog.field + ' »' : ''}. Voulez-vous continuer ?`"
+      variant="danger"
+      confirm-label="Supprimer"
+      :loading="loading"
+      @confirm="confirmDeleteAnomaly"
+      @cancel="closeDeleteDialog"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useDataQualityStore } from '@/stores/dataQuality'
 import type { DataAnomaly, AnomalyType } from '@/types'
 import { formatDate, downloadFile } from '@/utils/helpers'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const dataQualityStore = useDataQualityStore()
 
@@ -379,7 +395,7 @@ function cancelEdit() {
 
 async function saveEdit() {
   if (!editingAnomaly.value) return
-  
+
   try {
     await dataQualityStore.updateAnomaly(editingAnomaly.value.id, {
       suggestedValue: editedValue.value,
@@ -388,12 +404,13 @@ async function saveEdit() {
     cancelEdit()
   } catch (e) {
     console.error('Error saving edit:', e)
+    showErrorMessage(e instanceof Error ? e.message : "Impossible d'enregistrer la modification")
   }
 }
 
 async function applyFix(anomaly: DataAnomaly) {
   if (!anomaly.suggestedValue) return
-  
+
   try {
     await dataQualityStore.updateAnomaly(anomaly.id, {
       currentValue: anomaly.suggestedValue,
@@ -403,17 +420,40 @@ async function applyFix(anomaly: DataAnomaly) {
     await refreshData()
   } catch (e) {
     console.error('Error applying fix:', e)
+    showErrorMessage(e instanceof Error ? e.message : "Impossible d'appliquer la correction")
   }
 }
 
-async function deleteAnomaly(id: string) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette anomalie ?')) return
-  
+const deleteDialog = reactive<{ open: boolean; id: string | null; field: string | null }>({
+  open: false,
+  id: null,
+  field: null,
+})
+
+function deleteAnomaly(id: string) {
+  const anomaly = dataQualityStore.anomalies.find((a) => a.id === id)
+  deleteDialog.id = id
+  deleteDialog.field = anomaly?.field ?? null
+  deleteDialog.open = true
+}
+
+function closeDeleteDialog() {
+  deleteDialog.open = false
+  deleteDialog.id = null
+  deleteDialog.field = null
+}
+
+async function confirmDeleteAnomaly() {
+  if (!deleteDialog.id) return
+
   try {
-    await dataQualityStore.deleteAnomaly(id)
+    await dataQualityStore.deleteAnomaly(deleteDialog.id)
     showSuccessMessage('Anomalie supprimée avec succès')
+    closeDeleteDialog()
   } catch (e) {
     console.error('Error deleting anomaly:', e)
+    showErrorMessage(e instanceof Error ? e.message : "Impossible de supprimer l'anomalie")
+    closeDeleteDialog()
   }
 }
 

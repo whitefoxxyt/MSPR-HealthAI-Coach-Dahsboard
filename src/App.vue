@@ -14,8 +14,8 @@ onMounted(() => {
   authStore.hydrateFromStorage()
 })
 
-function handleLogout() {
-  authStore.logout()
+async function handleLogout() {
+  await authStore.logout()
   router.push({ name: 'auth' })
 }
 </script>

@@ -150,18 +150,26 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
   }
 
   async function fetchDietStats() {
+    loading.value = true
     try {
       dietStats.value = await dietRecommendationApi.getStats()
     } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Erreur lors du chargement des statistiques'
       console.error('Error fetching diet stats:', e)
+    } finally {
+      loading.value = false
     }
   }
 
   async function fetchEtlReport() {
+    loading.value = true
     try {
       etlReport.value = await dataQualityApi.getEtlReport()
     } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Erreur lors du chargement du rapport ETL'
       console.error('Error fetching ETL report:', e)
+    } finally {
+      loading.value = false
     }
   }
 

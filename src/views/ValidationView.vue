@@ -11,9 +11,9 @@
     </header>
 
     <!-- Message d'erreur -->
-    <div v-if="error" class="alert alert-error" role="alert">
-      <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
-      {{ error }}
+    <div v-if="error || localError" class="alert alert-error" role="alert">
+      <font-awesome-icon :icon="['fas', 'triangle-exclamation']" aria-hidden="true" />
+      {{ localError || error }}
     </div>
 
     <!-- Message de succès -->
@@ -336,14 +336,62 @@
         </button>
       </nav>
     </section>
+
+    <ConfirmDialog
+      :open="batchDialog.open"
+      :title="batchDialog.action === 'approved' ? 'Approuver les enregistrements' : 'Rejeter les enregistrements'"
+      :message="batchDialog.action === 'approved'
+        ? `Approuver ${selectedRecords.length} enregistrement(s) ? Ils passeront en production.`
+        : `Rejeter ${selectedRecords.length} enregistrement(s) ? Cette action est réversible mais bloquera leur mise en production.`"
+      :variant="batchDialog.action === 'approved' ? 'success' : 'danger'"
+      :confirm-label="batchDialog.action === 'approved' ? 'Approuver' : 'Rejeter'"
+      :loading="loading"
+      @confirm="confirmBatch"
+      @cancel="closeBatchDialog"
+    />
+
+    <BaseModal
+      :open="detailsDialog.open"
+      title="Détails de l'enregistrement"
+      @close="closeDetailsDialog"
+    >
+      <dl v-if="detailsDialog.record" class="details-list">
+        <div class="details-list__row">
+          <dt>Identifiant</dt>
+          <dd><code>{{ detailsDialog.record.id }}</code></dd>
+        </div>
+        <div class="details-list__row">
+          <dt>Type</dt>
+          <dd>{{ detailsDialog.record.type }}</dd>
+        </div>
+        <div class="details-list__row">
+          <dt>Statut</dt>
+          <dd>{{ detailsDialog.record.status }}</dd>
+        </div>
+        <div class="details-list__row">
+          <dt>Soumis le</dt>
+          <dd>{{ formatDate(detailsDialog.record.submittedAt) }}</dd>
+        </div>
+      </dl>
+      <h3 class="details-subtitle">Données</h3>
+      <pre v-if="detailsDialog.record" class="details-json">{{ formatJSON(detailsDialog.record.data) }}</pre>
+
+      <template #footer>
+        <button type="button" class="btn btn-secondary" @click="closeDetailsDialog">
+          Fermer
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useValidationStore } from '@/stores/validation'
 import type { DataRecord, ValidationStatus } from '@/types'
 import { formatDate } from '@/utils/helpers'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 const validationStore = useValidationStore()
 
@@ -352,6 +400,7 @@ const selectedRecords = ref<string[]>([])
 const editingRecord = ref<DataRecord | null>(null)
 const editedData = ref('')
 const successMessage = ref<string | null>(null)
+const localError = ref<string | null>(null)
 
 // Computed depuis le store
 const records = computed(() => validationStore.records)
@@ -425,8 +474,12 @@ async function saveEdit() {
     showSuccessMessage('Modification enregistrée avec succès')
     cancelEdit()
   } catch (e) {
-    alert('Erreur: JSON invalide')
     console.error('Error saving edit:', e)
+    if (e instanceof SyntaxError) {
+      showErrorMessage('JSON invalide : vérifiez la syntaxe avant d\'enregistrer')
+    } else {
+      showErrorMessage(e instanceof Error ? e.message : "Impossible d'enregistrer la modification")
+    }
   }
 }
 
@@ -437,35 +490,67 @@ async function validateRecord(id: string, status: 'approved' | 'rejected') {
     selectedRecords.value = selectedRecords.value.filter(rid => rid !== id)
   } catch (e) {
     console.error('Error validating record:', e)
+    showErrorMessage(e instanceof Error ? e.message : "Impossible de valider l'enregistrement")
   }
 }
 
-async function batchApprove() {
-  if (!confirm(`Approuver ${selectedRecords.value.length} enregistrement(s) ?`)) return
-  
+const batchDialog = reactive<{ open: boolean; action: 'approved' | 'rejected' | null }>({
+  open: false,
+  action: null,
+})
+
+function batchApprove() {
+  if (selectedRecords.value.length === 0) return
+  batchDialog.action = 'approved'
+  batchDialog.open = true
+}
+
+function batchReject() {
+  if (selectedRecords.value.length === 0) return
+  batchDialog.action = 'rejected'
+  batchDialog.open = true
+}
+
+function closeBatchDialog() {
+  batchDialog.open = false
+  batchDialog.action = null
+}
+
+async function confirmBatch() {
+  if (!batchDialog.action) return
+  const action = batchDialog.action
+  const count = selectedRecords.value.length
   try {
-    await validationStore.batchValidate(selectedRecords.value, 'approved')
-    showSuccessMessage(`${selectedRecords.value.length} enregistrement(s) approuvé(s)`)
+    await validationStore.batchValidate(selectedRecords.value, action)
+    showSuccessMessage(`${count} enregistrement(s) ${action === 'approved' ? 'approuvé(s)' : 'rejeté(s)'}`)
     selectedRecords.value = []
+    closeBatchDialog()
   } catch (e) {
-    console.error('Error batch approving:', e)
+    console.error('Error batch validating:', e)
+    showErrorMessage(
+      e instanceof Error
+        ? e.message
+        : action === 'approved'
+          ? "Impossible d'approuver les enregistrements"
+          : 'Impossible de rejeter les enregistrements',
+    )
+    closeBatchDialog()
   }
 }
 
-async function batchReject() {
-  if (!confirm(`Rejeter ${selectedRecords.value.length} enregistrement(s) ?`)) return
-  
-  try {
-    await validationStore.batchValidate(selectedRecords.value, 'rejected')
-    showSuccessMessage(`${selectedRecords.value.length} enregistrement(s) rejeté(s)`)
-    selectedRecords.value = []
-  } catch (e) {
-    console.error('Error batch rejecting:', e)
-  }
-}
+const detailsDialog = reactive<{ open: boolean; record: DataRecord | null }>({
+  open: false,
+  record: null,
+})
 
 function viewDetails(record: DataRecord) {
-  alert(`Détails de l'enregistrement:\n\n${JSON.stringify(record, null, 2)}`)
+  detailsDialog.record = record
+  detailsDialog.open = true
+}
+
+function closeDetailsDialog() {
+  detailsDialog.open = false
+  detailsDialog.record = null
 }
 
 function goToPage(page: number) {
@@ -475,10 +560,19 @@ function goToPage(page: number) {
 }
 
 function showSuccessMessage(message: string) {
+  localError.value = null
   successMessage.value = message
   setTimeout(() => {
     successMessage.value = null
   }, 3000)
+}
+
+function showErrorMessage(message: string) {
+  successMessage.value = null
+  localError.value = message
+  setTimeout(() => {
+    localError.value = null
+  }, 5000)
 }
 
 // Helpers
@@ -1191,5 +1285,98 @@ onMounted(async () => {
     animation: none;
     transition: none;
   }
+}
+
+/* Details modal */
+.details-list {
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.625rem;
+}
+
+.details-list__row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.details-list__row:last-child {
+  border-bottom: none;
+}
+
+.details-list dt {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.details-list dd {
+  margin: 0;
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.details-list dd code {
+  padding: 0.15rem 0.4rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+}
+
+.details-subtitle {
+  margin: 0 0 0.5rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.details-json {
+  margin: 0;
+  padding: 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 </style>
