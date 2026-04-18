@@ -370,7 +370,7 @@
         </div>
         <div class="details-list__row">
           <dt>Soumis le</dt>
-          <dd>{{ formatDate(detailsDialog.record.submittedAt) }}</dd>
+          <dd>{{ formatDate(detailsDialog.record.createdAt) }}</dd>
         </div>
       </dl>
       <h3 class="details-subtitle">Données</h3>

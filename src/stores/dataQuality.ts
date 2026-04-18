@@ -151,6 +151,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
 
   async function fetchDietStats() {
     loading.value = true
+    error.value = null
     try {
       dietStats.value = await dietRecommendationApi.getStats()
     } catch (e) {
@@ -163,6 +164,7 @@ export const useDataQualityStore = defineStore('dataQuality', () => {
 
   async function fetchEtlReport() {
     loading.value = true
+    error.value = null
     try {
       etlReport.value = await dataQualityApi.getEtlReport()
     } catch (e) {
