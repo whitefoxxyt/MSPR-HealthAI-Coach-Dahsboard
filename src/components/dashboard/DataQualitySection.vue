@@ -1,16 +1,6 @@
 <template>
-  <section class="dq-section" aria-labelledby="dq-title">
-    <header class="dq-section__header">
-      <div>
-        <h2 id="dq-title" class="section-title">Qualité des données</h2>
-        <p class="section-subtitle">Métriques ETL en temps réel</p>
-      </div>
-      <span class="live-badge" aria-label="Actualisation automatique toutes les 30 secondes">
-        <span class="live-dot" aria-hidden="true"></span>
-        Temps réel · 30s
-      </span>
-    </header>
-
+  <div class="dq">
+    <!-- KPI grid -->
     <div class="kpi-grid">
       <MetricsCard
         title="Enregistrements totaux"
@@ -45,13 +35,13 @@
         title="Anomalies critiques"
         :value="criticalAnomaliesCount"
         variant="danger"
-        subtitle="Nécessitent une attention"
+        subtitle="Nécessitent une intervention"
       >
         <template #icon><font-awesome-icon :icon="['fas', 'circle-exclamation']" /></template>
       </MetricsCard>
 
       <MetricsCard
-        title="Taux de complétude"
+        title="Complétude"
         :value="metrics?.completenessRate ?? 0"
         :is-percentage="true"
         :variant="completenessVariant"
@@ -66,7 +56,7 @@
         :value="healthScore"
         :is-percentage="true"
         :variant="healthScoreVariant"
-        subtitle="Qualité globale des données"
+        subtitle="Qualité globale"
       >
         <template #icon><font-awesome-icon :icon="['fas', 'heart-pulse']" /></template>
       </MetricsCard>
@@ -74,7 +64,7 @@
       <MetricsCard
         title="Lignes rejetées (ETL)"
         :value="etlReport?.totals.rowsRejected ?? 0"
-        :variant="rejectionVariant"
+        :variant="rejectionCountVariant"
         :subtitle="`sur ${(etlReport?.totals.rowsRead ?? 0).toLocaleString('fr-FR')} lues`"
       >
         <template #icon><font-awesome-icon :icon="['fas', 'ban']" /></template>
@@ -84,70 +74,88 @@
         title="Taux de rejet (ETL)"
         :value="(etlReport?.totals.rejectionRate ?? 0) * 100"
         :is-percentage="true"
-        :variant="rejectionVariant"
-        :trend="rejectionTrend"
-        :trend-direction="rejectionTrendDir"
+        :variant="rejectionRateVariant"
+        :trend-direction="(etlReport?.totals.rejectionRate ?? 0) > 0.05 ? 'up' : 'down'"
       >
         <template #icon><font-awesome-icon :icon="['fas', 'percent']" /></template>
       </MetricsCard>
     </div>
 
-    <div v-if="rejectedPipelines.length > 0" class="rejection-panel">
-      <h3 class="rejection-panel__title">
-        <font-awesome-icon :icon="['fas', 'chart-bar']" aria-hidden="true" />
-        Détail des rejets par pipeline
-      </h3>
-
-      <div class="rejection-list">
+    <!-- Flux de données -->
+    <div class="subsection">
+      <h3 class="subsection__title">Flux de données</h3>
+      <div class="flows-grid">
         <div
-          v-for="(pipeline, i) in rejectedPipelines"
-          :key="pipeline.name"
-          class="rejection-item"
-          :style="{ '--delay': `${i * 80}ms` }"
+          v-for="flow in flows"
+          :key="flow.name"
+          class="flow-row"
+          :class="`flow-row--${flow.status}`"
         >
-          <div class="rejection-item__head">
-            <span class="rejection-item__name">{{ pipeline.name }}</span>
-            <div class="rejection-item__meta">
-              <span class="rejection-item__count">
-                {{ pipeline.rowsRejected.toLocaleString('fr-FR') }} rejetés
-              </span>
-              <span
-                class="rejection-item__rate"
-                :class="pipeline.rejectionRate > 0.05 ? 'rate--warn' : 'rate--ok'"
-              >
-                {{ (pipeline.rejectionRate * 100).toFixed(1) }}%
-              </span>
+          <span class="flow-row__dot" :aria-label="`Statut : ${translateStatus(flow.status)}`"></span>
+          <span class="flow-row__name">{{ flow.name }}</span>
+          <span class="flow-row__badge" :class="`badge--${flow.status}`">{{ translateStatus(flow.status) }}</span>
+          <dl class="flow-row__metrics">
+            <div class="flow-metric">
+              <dt>Enregistrements</dt>
+              <dd>{{ flow.recordsToday.toLocaleString('fr-FR') }}</dd>
             </div>
-          </div>
-
-          <div class="rejection-bar" role="progressbar" :aria-valuenow="pipeline.rejectionRate * 100" aria-valuemin="0" aria-valuemax="100">
-            <div
-              class="rejection-bar__fill"
-              :class="pipeline.rejectionRate > 0.05 ? 'fill--warn' : 'fill--ok'"
-              :style="{ width: barWidth(pipeline.rejectionRate) }"
-            />
-          </div>
-
-          <ul v-if="hasReasons(pipeline)" class="reason-list">
-            <li
-              v-for="(count, reason) in pipeline.topRejectionReasons"
-              :key="reason"
-              class="reason-item"
-            >
-              <span class="reason-dot" aria-hidden="true" />
-              <span class="reason-label">{{ reason }}</span>
-              <span class="reason-count">{{ count }}</span>
-            </li>
-          </ul>
+            <div class="flow-metric">
+              <dt>Dernière synchro</dt>
+              <dd>{{ timeAgo(flow.lastSync) }}</dd>
+            </div>
+            <div class="flow-metric">
+              <dt>Taux d'erreur</dt>
+              <dd :class="getErrorClass(flow.errorRate)">{{ flow.errorRate.toFixed(1) }} %</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </div>
-  </section>
+
+    <!-- Rejets ETL par pipeline -->
+    <div v-if="rejectedPipelines.length > 0" class="subsection">
+      <h3 class="subsection__title">Détail des rejets par pipeline</h3>
+      <table class="reject-table" aria-label="Détail des rejets ETL par pipeline">
+        <thead>
+          <tr>
+            <th scope="col">Pipeline</th>
+            <th scope="col" class="num-col">Lus</th>
+            <th scope="col" class="num-col">Insérés</th>
+            <th scope="col" class="num-col">Rejetés</th>
+            <th scope="col" class="num-col">Taux</th>
+            <th scope="col">Raisons principales</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in rejectedPipelines" :key="p.name">
+            <td class="pipeline-name">{{ p.name }}</td>
+            <td class="num-col">{{ p.rowsRead.toLocaleString('fr-FR') }}</td>
+            <td class="num-col">{{ p.rowsInserted.toLocaleString('fr-FR') }}</td>
+            <td class="num-col rejected-count">{{ p.rowsRejected.toLocaleString('fr-FR') }}</td>
+            <td class="num-col" :class="p.rejectionRate > 0.05 ? 'rate-warn' : 'rate-ok'">
+              {{ (p.rejectionRate * 100).toFixed(1) }} %
+            </td>
+            <td class="reasons-col">
+              <span
+                v-for="(count, reason) in p.topRejectionReasons"
+                :key="reason"
+                class="reason-tag"
+              >
+                {{ reason }}&nbsp;<strong>{{ count }}</strong>
+              </span>
+              <span v-if="!hasReasons(p)" class="no-reasons">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DataQualityMetrics, EtlReport, EtlPipelineReport } from '@/types'
+import type { DataQualityMetrics, DataFlowStats, EtlReport, EtlPipelineReport } from '@/types'
+import { timeAgo } from '@/utils/helpers'
 import MetricsCard from '@/components/common/MetricsCard.vue'
 
 interface Props {
@@ -157,6 +165,7 @@ interface Props {
   pendingAnomaliesCount: number
   pendingRecordsCount: number
   etlReport: EtlReport | null
+  flows: DataFlowStats[]
 }
 
 const props = defineProps<Props>()
@@ -174,235 +183,214 @@ const healthScoreVariant = computed(() => {
   return 'danger'
 })
 
-const rejectionVariant = computed(() => {
-  const rate = props.etlReport?.totals.rejectionRate ?? 0
-  if (rate === 0) return 'success'
-  if (rate > 0.05) return 'danger'
+const rejectionCountVariant = computed(() => {
+  const n = props.etlReport?.totals.rowsRejected ?? 0
+  if (n === 0) return 'success'
+  if (n > 500) return 'danger'
   return 'warning'
 })
 
-const rejectionTrend = computed(() => {
-  const rate = props.etlReport?.totals.rejectionRate ?? 0
-  return rate > 0.05 ? '+' + (rate * 100).toFixed(1) + '%' : '-' + (rate * 100).toFixed(1) + '%'
-})
-
-const rejectionTrendDir = computed(() => {
-  const rate = props.etlReport?.totals.rejectionRate ?? 0
-  return rate > 0.05 ? 'up' : 'down'
+const rejectionRateVariant = computed(() => {
+  const r = props.etlReport?.totals.rejectionRate ?? 0
+  if (r === 0) return 'success'
+  if (r > 0.05) return 'danger'
+  return 'warning'
 })
 
 const rejectedPipelines = computed(() =>
   props.etlReport?.pipelines.filter(p => p.rowsRejected > 0) ?? [],
 )
 
-const maxRate = computed(() =>
-  Math.max(...rejectedPipelines.value.map(p => p.rejectionRate), 0.001),
-)
-
-function barWidth(rate: number) {
-  return `${Math.min((rate / maxRate.value) * 100, 100)}%`
+function hasReasons(p: EtlPipelineReport) {
+  return Object.keys(p.topRejectionReasons).length > 0
 }
 
-function hasReasons(pipeline: EtlPipelineReport) {
-  return Object.keys(pipeline.topRejectionReasons).length > 0
+function translateStatus(status: string) {
+  return ({ active: 'Actif', inactive: 'Inactif', error: 'Erreur' })[status] ?? status
+}
+
+function getErrorClass(rate: number) {
+  if (rate < 1) return 'err-low'
+  if (rate < 5) return 'err-med'
+  return 'err-high'
 }
 </script>
 
 <style scoped>
-.dq-section {
+.dq {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-.dq-section__header {
+/* ── KPI grid ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.875rem;
+}
+
+/* ── Subsections ── */
+.subsection { display: flex; flex-direction: column; gap: 0.875rem; }
+
+.subsection__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Flux de données ── */
+.flows-grid {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.flow-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.625rem;
   flex-wrap: wrap;
 }
 
-.section-title {
-  margin: 0 0 0.25rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--c-text);
-  padding-left: 0.75rem;
-  border-left: 3px solid var(--c-info);
-}
-
-.section-subtitle {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--c-text-muted);
-}
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.75rem;
-  background: var(--c-brand-xlight);
-  border: 1px solid rgba(48, 209, 88, 0.25);
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-brand);
-  white-space: nowrap;
-  letter-spacing: 0.01em;
-}
-
-.live-dot {
+.flow-row__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--c-brand);
-  animation: pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
+.flow-row--active   .flow-row__dot { background: var(--c-brand); }
+.flow-row--inactive .flow-row__dot { background: var(--c-text-muted); }
+.flow-row--error    .flow-row__dot { background: var(--c-danger); animation: pulse 1.5s ease-in-out infinite; }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.8); }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  .live-dot { animation: none; }
+  .flow-row__dot { animation: none; }
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-/* ── Rejection panel ── */
-.rejection-panel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.rejection-panel__title {
-  margin: 0 0 1.25rem;
+.flow-row__name {
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--c-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-row__badge {
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge--active   { background: var(--c-brand-xlight); color: var(--c-brand); }
+.badge--inactive { background: var(--c-surface-2);    color: var(--c-text-muted); }
+.badge--error    { background: var(--c-danger-light);  color: var(--c-danger); }
+
+.flow-row__metrics {
+  grid-column: 1 / -1;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.rejection-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.rejection-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  animation: fadeSlideUp 0.4s ease both;
-  animation-delay: var(--delay, 0ms);
-}
-
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rejection-item { animation: none; }
-}
-
-.rejection-item__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
+  margin: 0;
 }
 
-.rejection-item__name {
+.flow-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.flow-metric dt {
+  font-size: 0.6875rem;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.flow-metric dd {
+  margin: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--c-text);
-}
-
-.rejection-item__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.rejection-item__count {
-  font-size: 0.8125rem;
-  color: var(--c-text-muted);
   font-variant-numeric: tabular-nums;
 }
+.err-low  { color: var(--c-brand); }
+.err-med  { color: var(--c-energy); }
+.err-high { color: var(--c-danger); }
 
-.rejection-item__rate {
-  font-size: 0.8125rem;
+/* ── Rejection table ── */
+.reject-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.reject-table th {
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  font-size: 0.6875rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--c-border);
+  white-space: nowrap;
 }
 
-.rate--warn { color: var(--c-energy); }
-.rate--ok   { color: var(--c-brand); }
-
-/* ── Mini bar ── */
-.rejection-bar {
-  height: 6px;
-  background: var(--c-surface-2);
-  border-radius: 9999px;
-  overflow: hidden;
+.reject-table td {
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--c-border);
+  color: var(--c-text);
+  vertical-align: top;
 }
 
-.rejection-bar__fill {
-  height: 100%;
-  border-radius: 9999px;
-  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+.reject-table tbody tr:last-child td { border-bottom: none; }
+
+.reject-table tbody tr:hover td {
+  background: var(--c-surface);
 }
 
-.fill--warn { background: var(--c-energy); }
-.fill--ok   { background: var(--c-brand); }
+.num-col        { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pipeline-name  { font-weight: 600; }
+.rejected-count { color: var(--c-danger); font-weight: 700; }
+.rate-warn      { color: var(--c-energy); font-weight: 700; }
+.rate-ok        { color: var(--c-brand); font-weight: 700; }
 
-/* ── Reason list ── */
-.reason-list {
-  margin: 0.25rem 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 1rem;
-}
+.reasons-col { max-width: 320px; }
 
-.reason-item {
-  display: flex;
+.reason-tag {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.375rem;
   font-size: 0.75rem;
   color: var(--c-text-muted);
+  white-space: nowrap;
 }
+.reason-tag strong { color: var(--c-text); }
 
-.reason-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--c-text-muted);
-  flex-shrink: 0;
-}
+.no-reasons { color: var(--c-text-muted); }
 
-.reason-label {
-  color: var(--c-text-muted);
-}
-
-.reason-count {
-  font-weight: 700;
-  color: var(--c-text);
-  font-variant-numeric: tabular-nums;
+@media (max-width: 768px) {
+  .reject-table { font-size: 0.8125rem; }
+  .flow-row { grid-template-columns: auto auto 1fr; }
 }
 </style>

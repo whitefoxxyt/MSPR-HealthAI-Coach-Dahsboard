@@ -1,41 +1,32 @@
 <template>
-  <section class="up-section" aria-labelledby="up-title">
-    <header class="section-header">
-      <div>
-        <h2 id="up-title" class="section-title">Progression utilisateurs</h2>
-        <p class="section-subtitle">Répartition et tendances sur {{ periodLabel }}</p>
+  <div class="charts-grid">
+    <figure class="chart-card">
+      <figcaption class="chart-card__title">Répartition par âge</figcaption>
+      <div class="chart-wrap">
+        <canvas ref="ageCanvas" role="img" aria-label="Diagramme circulaire de répartition des utilisateurs par tranche d'âge" />
       </div>
-    </header>
+    </figure>
 
-    <div class="charts-grid">
-      <figure class="chart-card">
-        <figcaption class="chart-card__title">Répartition par âge</figcaption>
-        <div class="chart-wrap">
-          <canvas ref="ageCanvas" role="img" aria-label="Diagramme circulaire de répartition des utilisateurs par tranche d'âge" />
-        </div>
-      </figure>
+    <figure class="chart-card">
+      <figcaption class="chart-card__title">Objectifs des utilisateurs</figcaption>
+      <div class="chart-wrap">
+        <canvas ref="objectiveCanvas" role="img" aria-label="Graphique en barres de la répartition des utilisateurs par objectif" />
+      </div>
+    </figure>
 
-      <figure class="chart-card">
-        <figcaption class="chart-card__title">Objectifs des utilisateurs</figcaption>
-        <div class="chart-wrap">
-          <canvas ref="objectiveCanvas" role="img" aria-label="Graphique en barres de la répartition des utilisateurs par objectif" />
+    <figure class="chart-card chart-card--wide">
+      <div class="chart-card__header">
+        <figcaption class="chart-card__title">Taux de progression</figcaption>
+        <div class="chart-card__meta">
+          <span class="big-rate">{{ formatPercentage(progressionRate) }}</span>
+          <span class="period-note">{{ periodLabel }}</span>
         </div>
-      </figure>
-
-      <figure class="chart-card chart-card--wide">
-        <div class="chart-card__header">
-          <figcaption class="chart-card__title">
-            Taux de progression
-            <span class="progression-rate">{{ formatPercentage(progressionRate) }}</span>
-          </figcaption>
-          <p class="chart-note">{{ periodLabel }}</p>
-        </div>
-        <div class="chart-wrap">
-          <canvas ref="trendCanvas" role="img" :aria-label="`Courbe de tendance de progression sur ${periodLabel}`" />
-        </div>
-      </figure>
-    </div>
-  </section>
+      </div>
+      <div class="chart-wrap chart-wrap--short">
+        <canvas ref="trendCanvas" role="img" :aria-label="`Courbe de tendance de progression sur ${periodLabel}`" />
+      </div>
+    </figure>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -49,20 +40,29 @@ const props = defineProps<{
   period: AnalyticsPeriod
 }>()
 
-const ageCanvas = ref<HTMLCanvasElement | null>(null)
+const ageCanvas       = ref<HTMLCanvasElement | null>(null)
 const objectiveCanvas = ref<HTMLCanvasElement | null>(null)
-const trendCanvas = ref<HTMLCanvasElement | null>(null)
+const trendCanvas     = ref<HTMLCanvasElement | null>(null)
 
-let ageChart: Chart<'doughnut'> | null = null
-let objectiveChart: Chart<'bar'> | null = null
-let trendChart: Chart<'line'> | null = null
+let ageChart:       Chart<'doughnut'> | null = null
+let objectiveChart: Chart<'bar'>      | null = null
+let trendChart:     Chart<'line'>     | null = null
 
 const periodLabel = computed(() => {
-  const map: Record<AnalyticsPeriod, string> = { '7d': '7 derniers jours', '30d': '30 derniers jours', '90d': '90 derniers jours' }
+  const map: Record<AnalyticsPeriod, string> = {
+    '7d':  '7 derniers jours',
+    '30d': '30 derniers jours',
+    '90d': '90 derniers jours',
+  }
   return map[props.period]
 })
 
 const progressionRate = computed(() => props.analytics.progressionRateByPeriod[props.period])
+
+const CHART_OPTS = {
+  tickColor: '#8e8e93' as const,
+  gridColor: 'rgba(84,84,88,0.35)' as const,
+}
 
 function renderAge() {
   if (!ageCanvas.value) return
@@ -81,10 +81,7 @@ function renderAge() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { boxWidth: 10, padding: 14, color: '#8e8e93', font: { size: 12 } },
-        },
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, color: CHART_OPTS.tickColor, font: { size: 12 } } },
       },
     },
   })
@@ -98,10 +95,10 @@ function renderObjective() {
     data: {
       labels: props.analytics.objectiveDistribution.map(i => i.label),
       datasets: [{
-        label: 'Part des utilisateurs (%)',
+        label: 'Part (%)',
         data: props.analytics.objectiveDistribution.map(i => i.value),
         backgroundColor: '#0a84ff',
-        borderRadius: 6,
+        borderRadius: 5,
         borderSkipped: false,
       }],
     },
@@ -111,18 +108,8 @@ function renderObjective() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: {
-          beginAtZero: true,
-          max: 100,
-          ticks: { color: '#8e8e93' },
-          grid: { color: 'rgba(84, 84, 88, 0.40)' },
-          border: { color: 'transparent' },
-        },
-        y: {
-          ticks: { color: '#8e8e93' },
-          grid: { display: false },
-          border: { color: 'transparent' },
-        },
+        x: { beginAtZero: true, max: 100, ticks: { color: CHART_OPTS.tickColor }, grid: { color: CHART_OPTS.gridColor }, border: { color: 'transparent' } },
+        y: { ticks: { color: CHART_OPTS.tickColor }, grid: { display: false }, border: { color: 'transparent' } },
       },
     },
   })
@@ -140,7 +127,7 @@ function renderTrend() {
         label: 'Progression (%)',
         data: trend.map(p => p.value),
         borderColor: '#30d158',
-        backgroundColor: 'rgba(48, 209, 88, 0.12)',
+        backgroundColor: 'rgba(48,209,88,0.1)',
         fill: true,
         tension: 0.4,
         pointRadius: 3,
@@ -153,67 +140,22 @@ function renderTrend() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: { color: '#8e8e93' },
-          grid: { color: 'rgba(84, 84, 88, 0.40)' },
-          border: { color: 'transparent' },
-        },
-        x: {
-          ticks: { color: '#8e8e93' },
-          grid: { display: false },
-          border: { color: 'transparent' },
-        },
+        y: { beginAtZero: true, max: 100, ticks: { color: CHART_OPTS.tickColor }, grid: { color: CHART_OPTS.gridColor }, border: { color: 'transparent' } },
+        x: { ticks: { color: CHART_OPTS.tickColor }, grid: { display: false }, border: { color: 'transparent' } },
       },
     },
   })
 }
 
-function renderAll() {
-  renderAge()
-  renderObjective()
-  renderTrend()
-}
+function renderAll() { renderAge(); renderObjective(); renderTrend() }
 
 watch(() => props.analytics, renderAll, { deep: true })
-watch(() => props.period, () => {
-  renderTrend()
-})
-onBeforeUnmount(() => {
-  ageChart?.destroy()
-  objectiveChart?.destroy()
-  trendChart?.destroy()
-})
+watch(() => props.period, renderTrend)
+
+onBeforeUnmount(() => { ageChart?.destroy(); objectiveChart?.destroy(); trendChart?.destroy() })
 </script>
 
 <style scoped>
-.up-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.section-header {
-  margin-bottom: 0.25rem;
-}
-
-.section-title {
-  margin: 0 0 0.25rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--c-text);
-  padding-left: 0.75rem;
-  border-left: 3px solid var(--c-info);
-}
-
-.section-subtitle {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--c-text-muted);
-  padding-left: 0.75rem;
-}
-
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -224,57 +166,53 @@ onBeforeUnmount(() => {
   margin: 0;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: var(--radius);
+  border-radius: 0.875rem;
   padding: 1.25rem;
   box-shadow: var(--shadow-sm);
 }
 
-.chart-card--wide {
-  grid-column: 1 / -1;
-}
+.chart-card--wide { grid-column: 1 / -1; }
 
 .chart-card__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
 .chart-card__title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.9375rem;
+  display: block;
+  margin: 0 0 0.875rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: var(--c-text);
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.chart-card--wide .chart-card__title {
-  margin: 0;
+.chart-card--wide .chart-card__title { margin: 0; }
+
+.chart-card__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
 }
 
-.progression-rate {
-  font-size: 1.5rem;
+.big-rate {
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--c-brand);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.chart-note {
-  margin: 0;
+.period-note {
   font-size: 0.8125rem;
   color: var(--c-text-muted);
 }
 
-.chart-wrap {
-  height: 220px;
-  position: relative;
-}
-
-.chart-card--wide .chart-wrap {
-  height: 180px;
-}
+.chart-wrap          { height: 220px; position: relative; }
+.chart-wrap--short   { height: 160px; }
 </style>
