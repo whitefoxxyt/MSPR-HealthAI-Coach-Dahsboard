@@ -1,15 +1,13 @@
 <template>
   <section class="na-section" aria-labelledby="na-title">
-    <h2 id="na-title" class="section-title">Nutrition &amp; Activité</h2>
+    <header class="section-header">
+      <div>
+        <h2 id="na-title" class="section-title">Nutrition &amp; Activité</h2>
+        <p class="section-subtitle">Analyse nutritionnelle et physique des utilisateurs</p>
+      </div>
+    </header>
 
     <div class="charts-grid">
-      <figure class="chart-card">
-        <figcaption class="chart-card__title">Tendances alimentaires</figcaption>
-        <div class="chart-wrap">
-          <canvas ref="foodCanvas" role="img" :aria-label="`Courbe des tendances alimentaires sur ${periodLabel}`" />
-        </div>
-      </figure>
-
       <figure class="chart-card">
         <figcaption class="chart-card__title">Déficits / Excès par profil</figcaption>
         <div class="chart-wrap">
@@ -35,71 +33,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import Chart from 'chart.js/auto'
-import type { AnalyticsOverview, AnalyticsPeriod } from '@/types'
+import type { AnalyticsOverview } from '@/types'
 
 const props = defineProps<{
   analytics: AnalyticsOverview
-  period: AnalyticsPeriod
 }>()
 
-const foodCanvas = ref<HTMLCanvasElement | null>(null)
 const nutritionCanvas = ref<HTMLCanvasElement | null>(null)
 const exercisesCanvas = ref<HTMLCanvasElement | null>(null)
 const intensityCanvas = ref<HTMLCanvasElement | null>(null)
 
-let foodChart: Chart<'line'> | null = null
 let nutritionChart: Chart<'bar'> | null = null
 let exercisesChart: Chart<'bar'> | null = null
 let intensityChart: Chart<'doughnut'> | null = null
-
-const periodLabel = computed(() => {
-  const map: Record<AnalyticsPeriod, string> = { '7d': '7 derniers jours', '30d': '30 derniers jours', '90d': '90 derniers jours' }
-  return map[props.period]
-})
-
-function renderFood() {
-  if (!foodCanvas.value) return
-  foodChart?.destroy()
-  const trend = props.analytics.foodTrends[props.period]
-  foodChart = new Chart(foodCanvas.value, {
-    type: 'line',
-    data: {
-      labels: trend.map(p => p.label),
-      datasets: [{
-        label: 'Score alimentaire',
-        data: trend.map(p => p.value),
-        borderColor: '#30d158',
-        backgroundColor: 'rgba(48, 209, 88, 0.12)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: '#30d158',
-        borderWidth: 2,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: { color: '#8e8e93' },
-          grid: { color: 'rgba(84, 84, 88, 0.40)' },
-          border: { color: 'transparent' },
-        },
-        x: {
-          ticks: { color: '#8e8e93' },
-          grid: { display: false },
-          border: { color: 'transparent' },
-        },
-      },
-    },
-  })
-}
 
 function renderNutrition() {
   if (!nutritionCanvas.value) return
@@ -215,16 +163,13 @@ function renderIntensity() {
 }
 
 function renderAll() {
-  renderFood()
   renderNutrition()
   renderExercises()
   renderIntensity()
 }
 
 watch(() => props.analytics, renderAll, { deep: true })
-watch(() => props.period, () => { renderFood() })
 onBeforeUnmount(() => {
-  foodChart?.destroy()
   nutritionChart?.destroy()
   exercisesChart?.destroy()
   intensityChart?.destroy()
@@ -238,11 +183,24 @@ onBeforeUnmount(() => {
   gap: 1.25rem;
 }
 
+.section-header {
+  margin-bottom: 0.25rem;
+}
+
 .section-title {
-  margin: 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--c-text);
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--c-energy);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
+  padding-left: 0.75rem;
 }
 
 .charts-grid {

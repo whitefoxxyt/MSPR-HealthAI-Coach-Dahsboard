@@ -1,53 +1,73 @@
 <template>
   <div class="dashboard">
     <header class="dashboard__header">
-      <div>
+      <div class="dashboard__heading">
         <h1 class="dashboard__title">Dashboard HealthAI Coach</h1>
         <p class="dashboard__subtitle">Tableau de bord de pilotage de la qualité des données</p>
       </div>
-      <label class="period-filter">
-        <span class="period-filter__label">Période</span>
-        <select v-model="selectedPeriod" class="period-filter__select" aria-label="Sélectionner la période d'analyse">
-          <option value="7d">7 jours</option>
-          <option value="30d">30 jours</option>
-          <option value="90d">90 jours</option>
-        </select>
-      </label>
+      <div class="dashboard__controls">
+        <label class="period-filter">
+          <span class="period-filter__label">Période</span>
+          <select v-model="selectedPeriod" class="period-filter__select" aria-label="Sélectionner la période d'analyse">
+            <option value="7d">7 jours</option>
+            <option value="30d">30 jours</option>
+            <option value="90d">90 jours</option>
+          </select>
+        </label>
+      </div>
     </header>
 
-    <div v-if="exportError || error" class="alert" role="alert">
-      <span aria-hidden="true">⚠️</span> {{ exportError || error }}
-    </div>
+    <Transition name="alert">
+      <div v-if="exportError || error" class="alert" role="alert">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" aria-hidden="true" />
+        {{ exportError || error }}
+      </div>
+    </Transition>
 
-    <div v-if="loading && !metrics" class="loading" role="status">
-      <span class="sr-only">Chargement en cours…</span>
-      <div class="spinner" aria-hidden="true"></div>
-    </div>
+    <Transition name="fade" mode="out-in">
+      <div v-if="loading && !metrics" class="loading" role="status" key="loading">
+        <span class="sr-only">Chargement en cours…</span>
+        <div class="spinner" aria-hidden="true"></div>
+      </div>
 
-    <template v-else>
-      <DataQualitySection
-        :metrics="metrics"
-        :health-score="healthScore"
-        :critical-anomalies-count="criticalAnomaliesCount"
-        :pending-anomalies-count="pendingAnomaliesCount"
-        :pending-records-count="pendingRecordsCount"
-      />
+      <div v-else class="dashboard__body" key="body">
+        <div class="panel panel--row">
+          <DataQualitySection
+            :metrics="metrics"
+            :health-score="healthScore"
+            :critical-anomalies-count="criticalAnomaliesCount"
+            :pending-anomalies-count="pendingAnomaliesCount"
+            :pending-records-count="pendingRecordsCount"
+            :etl-report="etlReport"
+          />
+        </div>
 
-      <template v-if="analytics">
-        <UserProgressionSection :analytics="analytics" :period="selectedPeriod" />
-        <NutritionActivitySection :analytics="analytics" :period="selectedPeriod" />
-        <BusinessKpisSection
-          :analytics="analytics"
-          :flows="dataFlows"
-          :pending-anomalies-count="pendingAnomaliesCount"
-          :pending-records-count="pendingRecordsCount"
-          @export="handleExport"
-          @refresh="refreshAll"
-        />
-      </template>
+        <template v-if="analytics">
+          <div class="panel">
+            <UserProgressionSection :analytics="analytics" :period="selectedPeriod" />
+          </div>
 
-      <EtlReportSection v-if="etlReport" :report="etlReport" />
-    </template>
+          <div class="panel">
+            <NutritionActivitySection :analytics="analytics" />
+          </div>
+
+          <div class="panel panel--row">
+            <BusinessKpisSection
+              :analytics="analytics"
+              :flows="dataFlows"
+              :pending-anomalies-count="pendingAnomaliesCount"
+              :pending-records-count="pendingRecordsCount"
+              @export="handleExport"
+              @refresh="refreshAll"
+            />
+          </div>
+        </template>
+
+        <div v-if="etlReport" class="panel panel--row">
+          <EtlReportSection :report="etlReport" />
+        </div>
+      </div>
+    </Transition>
 
     <footer class="dashboard__footer">
       <p class="last-update">Dernière mise à jour : {{ lastUpdateFormatted }}</p>
@@ -121,29 +141,38 @@ onBeforeUnmount(() => {
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.75rem;
 }
 
+/* ── Header ── */
 .dashboard__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
   flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--c-border);
 }
 
 .dashboard__title {
-  margin: 0 0 0.375rem;
-  font-size: 1.75rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.625rem;
   font-weight: 800;
   color: var(--c-text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .dashboard__subtitle {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--c-text-muted);
+}
+
+.dashboard__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .period-filter {
@@ -153,7 +182,7 @@ onBeforeUnmount(() => {
 }
 
 .period-filter__label {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--c-text-muted);
   white-space: nowrap;
@@ -169,13 +198,13 @@ onBeforeUnmount(() => {
   font-weight: 500;
   color: var(--c-text);
   cursor: pointer;
+  transition: border-color 0.15s;
 }
 
-.period-filter__select:focus-visible {
-  outline: 2px solid var(--c-brand);
-  outline-offset: 2px;
-}
+.period-filter__select:hover  { border-color: rgba(255, 255, 255, 0.18); }
+.period-filter__select:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
 
+/* ── Alert ── */
 .alert {
   padding: 0.875rem 1.25rem;
   background: var(--c-danger-light);
@@ -188,10 +217,16 @@ onBeforeUnmount(() => {
   gap: 0.625rem;
 }
 
+.alert-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.alert-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.alert-enter-from   { opacity: 0; transform: translateY(-6px); }
+.alert-leave-to     { opacity: 0; transform: translateY(-6px); }
+
+/* ── Loading ── */
 .loading {
   display: flex;
   justify-content: center;
-  padding: 4rem 0;
+  padding: 5rem 0;
 }
 
 .spinner {
@@ -203,17 +238,48 @@ onBeforeUnmount(() => {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Fade transition (loading ↔ body) ── */
+.fade-enter-active { transition: opacity 0.35s ease; }
+.fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ── Body grid ── */
+.dashboard__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner { animation: none; }
+/* ── Panels with staggered entry ── */
+.panel {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  min-width: 0;
+  animation: panelIn 0.45s ease both;
 }
 
+.panel:nth-child(1) { animation-delay: 0.04s; }
+.panel:nth-child(2) { animation-delay: 0.12s; }
+.panel:nth-child(3) { animation-delay: 0.18s; }
+.panel:nth-child(4) { animation-delay: 0.26s; }
+.panel:nth-child(5) { animation-delay: 0.34s; }
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel--row {
+  grid-column: 1 / -1;
+}
+
+/* ── Footer ── */
 .dashboard__footer {
-  border-top: 1px solid var(--c-border);
   padding-top: 1rem;
+  border-top: 1px solid var(--c-border);
 }
 
 .last-update {
@@ -221,5 +287,20 @@ onBeforeUnmount(() => {
   font-size: 0.8125rem;
   color: var(--c-text-muted);
   text-align: right;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .dashboard__body  { grid-template-columns: 1fr; }
+  .panel--row       { grid-column: 1; }
+  .dashboard        { padding: 1.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel            { animation: none; }
+  .fade-enter-active,
+  .fade-leave-active,
+  .alert-enter-active,
+  .alert-leave-active { transition: none; }
 }
 </style>

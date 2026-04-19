@@ -1,6 +1,11 @@
 <template>
   <section class="bk-section" aria-labelledby="bk-title">
-    <h2 id="bk-title" class="section-title">KPIs Business</h2>
+    <header class="section-header">
+      <div>
+        <h2 id="bk-title" class="section-title">KPIs Business</h2>
+        <p class="section-subtitle">Indicateurs de performance et actions rapides</p>
+      </div>
+    </header>
 
     <div class="kpi-grid">
       <MetricsCard
@@ -11,7 +16,7 @@
         trend="+3.2%"
         trend-direction="up"
       >
-        <template #icon><span aria-hidden="true">🔥</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'fire']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -22,7 +27,7 @@
         trend="+1.1%"
         trend-direction="up"
       >
-        <template #icon><span aria-hidden="true">💎</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'gem']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -33,7 +38,7 @@
         trend="+0.8%"
         trend-direction="up"
       >
-        <template #icon><span aria-hidden="true">😊</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'face-smile']" /></template>
       </MetricsCard>
     </div>
 
@@ -43,7 +48,9 @@
 
     <nav class="quick-actions" aria-label="Actions rapides">
       <RouterLink to="/data-cleaning" class="action-card">
-        <span class="action-card__icon" aria-hidden="true">🧹</span>
+        <span class="action-card__icon action-card__icon--energy" aria-hidden="true">
+          <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+        </span>
         <div class="action-card__body">
           <h3 class="action-card__title">Nettoyage des données</h3>
           <p class="action-card__desc">Corriger les anomalies et normaliser les données</p>
@@ -52,7 +59,9 @@
       </RouterLink>
 
       <RouterLink to="/validation" class="action-card">
-        <span class="action-card__icon" aria-hidden="true">✓</span>
+        <span class="action-card__icon action-card__icon--brand" aria-hidden="true">
+          <font-awesome-icon :icon="['fas', 'shield-check']" />
+        </span>
         <div class="action-card__body">
           <h3 class="action-card__title">Workflow de validation</h3>
           <p class="action-card__desc">Approuver ou rejeter les données en attente</p>
@@ -61,7 +70,9 @@
       </RouterLink>
 
       <button class="action-card action-card--btn" @click="$emit('export')">
-        <span class="action-card__icon" aria-hidden="true">📥</span>
+        <span class="action-card__icon action-card__icon--info" aria-hidden="true">
+          <font-awesome-icon :icon="['fas', 'file-export']" />
+        </span>
         <div class="action-card__body">
           <h3 class="action-card__title">Exporter les données</h3>
           <p class="action-card__desc">Télécharger les données nettoyées (JSON / CSV)</p>
@@ -69,7 +80,9 @@
       </button>
 
       <button class="action-card action-card--btn" @click="$emit('refresh')">
-        <span class="action-card__icon" aria-hidden="true">🔄</span>
+        <span class="action-card__icon action-card__icon--muted" aria-hidden="true">
+          <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+        </span>
         <div class="action-card__body">
           <h3 class="action-card__title">Actualiser</h3>
           <p class="action-card__desc">Rafraîchir toutes les métriques</p>
@@ -105,11 +118,24 @@ defineEmits<{
   gap: 1.5rem;
 }
 
+.section-header {
+  margin-bottom: 0.25rem;
+}
+
 .section-title {
-  margin: 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--c-text);
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--c-brand);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
+  padding-left: 0.75rem;
 }
 
 .kpi-grid {
@@ -162,9 +188,36 @@ defineEmits<{
 }
 
 .action-card__icon {
-  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--c-surface-2);
+  color: var(--c-text-muted);
+  font-size: 0.9375rem;
   flex-shrink: 0;
-  line-height: 1;
+}
+
+.action-card__icon--brand {
+  background: var(--c-brand);
+  color: #000000;
+}
+
+.action-card__icon--energy {
+  background: var(--c-energy);
+  color: #000000;
+}
+
+.action-card__icon--info {
+  background: var(--c-info);
+  color: #ffffff;
+}
+
+.action-card__icon--muted {
+  background: var(--c-surface-2);
+  color: var(--c-text-muted);
 }
 
 .action-card__body {

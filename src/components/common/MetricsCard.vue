@@ -1,9 +1,7 @@
 <template>
   <div class="metrics-card" :class="variant">
-    <div class="metrics-card__icon" :aria-hidden="true">
-      <slot name="icon">
-        <span class="default-icon">📊</span>
-      </slot>
+    <div class="metrics-card__icon" aria-hidden="true">
+      <slot name="icon" />
     </div>
     <div class="metrics-card__content">
       <h3 class="metrics-card__title">{{ title }}</h3>
@@ -11,14 +9,14 @@
       <p v-if="subtitle" class="metrics-card__subtitle">{{ subtitle }}</p>
     </div>
     <div v-if="trend" class="metrics-card__trend" :class="trendClass">
-      <span :aria-label="trendAriaLabel">{{ trendIcon }}</span>
+      <font-awesome-icon :icon="trendIcon" :aria-label="trendAriaLabel" />
       <span>{{ trend }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { formatNumber, formatPercentage } from '@/utils/helpers'
 
 interface Props {
@@ -36,21 +34,50 @@ const props = withDefaults(defineProps<Props>(), {
   isPercentage: false,
 })
 
+const animatedValue = ref(0)
+let rafId: number | null = null
+
+watch(
+  () => props.value,
+  (newVal) => {
+    if (typeof newVal !== 'number') return
+    const start = animatedValue.value
+    const end = newVal
+    const duration = 750
+    const startTime = performance.now()
+
+    if (rafId !== null) cancelAnimationFrame(rafId)
+
+    function tick(now: number) {
+      const elapsed = now - startTime
+      const p = Math.min(elapsed / duration, 1)
+      const eased = 1 - (1 - p) ** 3
+      animatedValue.value = start + (end - start) * eased
+      if (p < 1) rafId = requestAnimationFrame(tick)
+      else animatedValue.value = end
+    }
+
+    rafId = requestAnimationFrame(tick)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (rafId !== null) cancelAnimationFrame(rafId)
+})
+
 const formattedValue = computed(() => {
   if (typeof props.value === 'string') return props.value
-  return props.isPercentage 
-    ? formatPercentage(props.value) 
-    : formatNumber(props.value)
+  const v = animatedValue.value
+  return props.isPercentage ? formatPercentage(v) : formatNumber(Math.round(v))
 })
 
-const trendClass = computed(() => {
-  return `trend-${props.trendDirection || 'neutral'}`
-})
+const trendClass = computed(() => `trend-${props.trendDirection || 'neutral'}`)
 
 const trendIcon = computed(() => {
-  if (props.trendDirection === 'up') return '↑'
-  if (props.trendDirection === 'down') return '↓'
-  return '→'
+  if (props.trendDirection === 'up') return ['fas', 'arrow-trend-up']
+  if (props.trendDirection === 'down') return ['fas', 'arrow-trend-down']
+  return ['fas', 'minus']
 })
 
 const trendAriaLabel = computed(() => {
@@ -70,13 +97,13 @@ const trendAriaLabel = computed(() => {
   border-radius: var(--radius);
   border: 1px solid var(--c-border);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .metrics-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .metrics-card__icon {
@@ -85,10 +112,16 @@ const trendAriaLabel = computed(() => {
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 0.75rem;
+  border-radius: 50%;
   background: var(--c-surface-2);
-  font-size: 1.25rem;
+  color: var(--c-text-muted);
+  font-size: 1rem;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.metrics-card:hover .metrics-card__icon {
+  transform: scale(1.1);
 }
 
 .metrics-card__content {
@@ -132,49 +165,20 @@ const trendAriaLabel = computed(() => {
   flex-shrink: 0;
 }
 
-.trend-up {
-  color: var(--c-brand);
-  background: var(--c-brand-xlight);
-}
+.trend-up   { color: var(--c-brand);       background: var(--c-brand-xlight); }
+.trend-down { color: var(--c-danger);      background: var(--c-danger-light);  }
+.trend-neutral { color: var(--c-text-muted); background: var(--c-surface-2);  }
 
-.trend-down {
-  color: var(--c-danger);
-  background: var(--c-danger-light);
-}
-
-.trend-neutral {
-  color: var(--c-text-muted);
-  background: var(--c-surface-2);
-}
-
-/* Variants — icon background */
-.metrics-card.success .metrics-card__icon {
-  background: var(--c-brand-xlight);
-  color: var(--c-brand);
-}
-
-.metrics-card.warning .metrics-card__icon {
-  background: var(--c-energy-light);
-  color: var(--c-energy);
-}
-
-.metrics-card.danger .metrics-card__icon {
-  background: var(--c-danger-light);
-  color: var(--c-danger);
-}
-
-.metrics-card.info .metrics-card__icon {
-  background: var(--c-info-light);
-  color: var(--c-info);
-}
+/* Variants */
+.metrics-card.success .metrics-card__icon { background: var(--c-brand);  color: #000; }
+.metrics-card.warning .metrics-card__icon { background: var(--c-energy); color: #000; }
+.metrics-card.danger  .metrics-card__icon { background: var(--c-danger); color: #fff; }
+.metrics-card.info    .metrics-card__icon { background: var(--c-info);   color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .metrics-card {
-    transition: none;
-  }
-
-  .metrics-card:hover {
-    transform: none;
-  }
+  .metrics-card,
+  .metrics-card__icon { transition: none; }
+  .metrics-card:hover { transform: none; }
+  .metrics-card:hover .metrics-card__icon { transform: none; }
 }
 </style>

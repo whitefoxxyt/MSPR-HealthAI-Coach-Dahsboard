@@ -29,24 +29,29 @@ async function handleLogout() {
     <nav class="main-nav" role="navigation" aria-label="Navigation principale">
       <div class="nav-container">
         <RouterLink to="/dashboard" class="nav-brand" aria-label="HealthAI Coach - Accueil">
-          <span class="nav-brand__icon" aria-hidden="true">❤️</span>
+          <span class="nav-brand__icon" aria-hidden="true">
+            <font-awesome-icon :icon="['fas', 'heart-pulse']" />
+          </span>
           <span class="nav-brand__text">HealthAI Coach</span>
         </RouterLink>
 
         <ul class="nav-menu" role="list">
           <li class="nav-item">
             <RouterLink to="/dashboard" class="nav-link" active-class="nav-link--active">
-              <span aria-hidden="true">📊</span> Dashboard
+              <font-awesome-icon :icon="['fas', 'chart-line']" class="nav-link__icon" aria-hidden="true" />
+              Dashboard
             </RouterLink>
           </li>
           <li class="nav-item">
             <RouterLink to="/data-cleaning" class="nav-link" active-class="nav-link--active">
-              <span aria-hidden="true">🧹</span> Nettoyage
+              <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="nav-link__icon" aria-hidden="true" />
+              Nettoyage
             </RouterLink>
           </li>
           <li class="nav-item">
             <RouterLink to="/validation" class="nav-link" active-class="nav-link--active">
-              <span aria-hidden="true">✓</span> Validation
+              <font-awesome-icon :icon="['fas', 'shield-check']" class="nav-link__icon" aria-hidden="true" />
+              Validation
             </RouterLink>
           </li>
         </ul>

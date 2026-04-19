@@ -1,6 +1,11 @@
 <template>
   <section class="up-section" aria-labelledby="up-title">
-    <h2 id="up-title" class="section-title">Progression utilisateurs</h2>
+    <header class="section-header">
+      <div>
+        <h2 id="up-title" class="section-title">Progression utilisateurs</h2>
+        <p class="section-subtitle">Répartition et tendances sur {{ periodLabel }}</p>
+      </div>
+    </header>
 
     <div class="charts-grid">
       <figure class="chart-card">
@@ -189,11 +194,24 @@ onBeforeUnmount(() => {
   gap: 1.25rem;
 }
 
+.section-header {
+  margin-bottom: 0.25rem;
+}
+
 .section-title {
-  margin: 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--c-text);
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--c-info);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
+  padding-left: 0.75rem;
 }
 
 .charts-grid {

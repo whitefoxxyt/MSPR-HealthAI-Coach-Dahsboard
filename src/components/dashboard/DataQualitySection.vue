@@ -18,7 +18,7 @@
         variant="info"
         subtitle="Dans la base de données"
       >
-        <template #icon><span aria-hidden="true">📊</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'database']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -28,7 +28,7 @@
         :trend="metrics && metrics.missingValues < 300 ? '-5%' : '+3%'"
         :trend-direction="metrics && metrics.missingValues < 300 ? 'down' : 'up'"
       >
-        <template #icon><span aria-hidden="true">⚠️</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'triangle-exclamation']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -38,7 +38,7 @@
         trend="-12%"
         trend-direction="down"
       >
-        <template #icon><span aria-hidden="true">🔄</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'copy']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -47,7 +47,7 @@
         variant="danger"
         subtitle="Nécessitent une attention"
       >
-        <template #icon><span aria-hidden="true">🚨</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'circle-exclamation']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -58,7 +58,7 @@
         trend="+2.5%"
         trend-direction="up"
       >
-        <template #icon><span aria-hidden="true">✓</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'circle-check']" /></template>
       </MetricsCard>
 
       <MetricsCard
@@ -68,27 +68,86 @@
         :variant="healthScoreVariant"
         subtitle="Qualité globale des données"
       >
-        <template #icon><span aria-hidden="true">❤️</span></template>
+        <template #icon><font-awesome-icon :icon="['fas', 'heart-pulse']" /></template>
+      </MetricsCard>
+
+      <MetricsCard
+        title="Lignes rejetées (ETL)"
+        :value="etlReport?.totals.rowsRejected ?? 0"
+        :variant="rejectionVariant"
+        :subtitle="`sur ${(etlReport?.totals.rowsRead ?? 0).toLocaleString('fr-FR')} lues`"
+      >
+        <template #icon><font-awesome-icon :icon="['fas', 'ban']" /></template>
+      </MetricsCard>
+
+      <MetricsCard
+        title="Taux de rejet (ETL)"
+        :value="(etlReport?.totals.rejectionRate ?? 0) * 100"
+        :is-percentage="true"
+        :variant="rejectionVariant"
+        :trend="rejectionTrend"
+        :trend-direction="rejectionTrendDir"
+      >
+        <template #icon><font-awesome-icon :icon="['fas', 'percent']" /></template>
       </MetricsCard>
     </div>
 
-    <div v-if="metrics" class="chart-card">
-      <h3 class="chart-card__title">Vue d'ensemble des problèmes de qualité</h3>
-      <div class="chart-wrap">
-        <canvas
-          ref="chartCanvas"
-          role="img"
-          aria-label="Graphique en barres des anomalies et problèmes de qualité des données"
-        />
+    <div v-if="rejectedPipelines.length > 0" class="rejection-panel">
+      <h3 class="rejection-panel__title">
+        <font-awesome-icon :icon="['fas', 'chart-bar']" aria-hidden="true" />
+        Détail des rejets par pipeline
+      </h3>
+
+      <div class="rejection-list">
+        <div
+          v-for="(pipeline, i) in rejectedPipelines"
+          :key="pipeline.name"
+          class="rejection-item"
+          :style="{ '--delay': `${i * 80}ms` }"
+        >
+          <div class="rejection-item__head">
+            <span class="rejection-item__name">{{ pipeline.name }}</span>
+            <div class="rejection-item__meta">
+              <span class="rejection-item__count">
+                {{ pipeline.rowsRejected.toLocaleString('fr-FR') }} rejetés
+              </span>
+              <span
+                class="rejection-item__rate"
+                :class="pipeline.rejectionRate > 0.05 ? 'rate--warn' : 'rate--ok'"
+              >
+                {{ (pipeline.rejectionRate * 100).toFixed(1) }}%
+              </span>
+            </div>
+          </div>
+
+          <div class="rejection-bar" role="progressbar" :aria-valuenow="pipeline.rejectionRate * 100" aria-valuemin="0" aria-valuemax="100">
+            <div
+              class="rejection-bar__fill"
+              :class="pipeline.rejectionRate > 0.05 ? 'fill--warn' : 'fill--ok'"
+              :style="{ width: barWidth(pipeline.rejectionRate) }"
+            />
+          </div>
+
+          <ul v-if="hasReasons(pipeline)" class="reason-list">
+            <li
+              v-for="(count, reason) in pipeline.topRejectionReasons"
+              :key="reason"
+              class="reason-item"
+            >
+              <span class="reason-dot" aria-hidden="true" />
+              <span class="reason-label">{{ reason }}</span>
+              <span class="reason-count">{{ count }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import Chart from 'chart.js/auto'
-import type { DataQualityMetrics } from '@/types'
+import { computed } from 'vue'
+import type { DataQualityMetrics, EtlReport, EtlPipelineReport } from '@/types'
 import MetricsCard from '@/components/common/MetricsCard.vue'
 
 interface Props {
@@ -97,12 +156,10 @@ interface Props {
   criticalAnomaliesCount: number
   pendingAnomaliesCount: number
   pendingRecordsCount: number
+  etlReport: EtlReport | null
 }
 
 const props = defineProps<Props>()
-
-const chartCanvas = ref<HTMLCanvasElement | null>(null)
-let chart: Chart<'bar'> | null = null
 
 const completenessVariant = computed(() => {
   const r = props.metrics?.completenessRate ?? 0
@@ -117,56 +174,38 @@ const healthScoreVariant = computed(() => {
   return 'danger'
 })
 
-const chartData = computed(() => ({
-  labels: ['Manquantes', 'Doublons', 'Anomalies en attente', 'Critiques', 'Validations en attente'],
-  values: [
-    props.metrics?.missingValues ?? 0,
-    props.metrics?.duplicates ?? 0,
-    props.pendingAnomaliesCount,
-    props.criticalAnomaliesCount,
-    props.pendingRecordsCount,
-  ],
-}))
+const rejectionVariant = computed(() => {
+  const rate = props.etlReport?.totals.rejectionRate ?? 0
+  if (rate === 0) return 'success'
+  if (rate > 0.05) return 'danger'
+  return 'warning'
+})
 
-function render() {
-  if (!chartCanvas.value) return
-  chart?.destroy()
-  chart = new Chart(chartCanvas.value, {
-    type: 'bar',
-    data: {
-      labels: chartData.value.labels,
-      datasets: [{
-        label: 'Nombre de cas',
-        data: chartData.value.values,
-        backgroundColor: ['#ff9f0a', '#0a84ff', '#bf5af2', '#ff453a', '#30d158'],
-        borderRadius: 6,
-        borderSkipped: false,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0, color: '#8e8e93' },
-          grid: { color: 'rgba(84, 84, 88, 0.40)' },
-          border: { color: 'transparent' },
-        },
-        x: {
-          ticks: { color: '#8e8e93' },
-          grid: { display: false },
-          border: { color: 'transparent' },
-        },
-      },
-    },
-  })
+const rejectionTrend = computed(() => {
+  const rate = props.etlReport?.totals.rejectionRate ?? 0
+  return rate > 0.05 ? '+' + (rate * 100).toFixed(1) + '%' : '-' + (rate * 100).toFixed(1) + '%'
+})
+
+const rejectionTrendDir = computed(() => {
+  const rate = props.etlReport?.totals.rejectionRate ?? 0
+  return rate > 0.05 ? 'up' : 'down'
+})
+
+const rejectedPipelines = computed(() =>
+  props.etlReport?.pipelines.filter(p => p.rowsRejected > 0) ?? [],
+)
+
+const maxRate = computed(() =>
+  Math.max(...rejectedPipelines.value.map(p => p.rejectionRate), 0.001),
+)
+
+function barWidth(rate: number) {
+  return `${Math.min((rate / maxRate.value) * 100, 100)}%`
 }
 
-watch(chartData, render, { deep: true })
-watch(() => props.metrics, render)
-onBeforeUnmount(() => chart?.destroy())
+function hasReasons(pipeline: EtlPipelineReport) {
+  return Object.keys(pipeline.topRejectionReasons).length > 0
+}
 </script>
 
 <style scoped>
@@ -186,9 +225,11 @@ onBeforeUnmount(() => chart?.destroy())
 
 .section-title {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--c-text);
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--c-info);
 }
 
 .section-subtitle {
@@ -222,7 +263,7 @@ onBeforeUnmount(() => chart?.destroy())
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -235,23 +276,133 @@ onBeforeUnmount(() => chart?.destroy())
   gap: 1rem;
 }
 
-.chart-card {
+/* ── Rejection panel ── */
+.rejection-panel {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   box-shadow: var(--shadow-sm);
 }
 
-.chart-card__title {
+.rejection-panel__title {
   margin: 0 0 1.25rem;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--c-text);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.chart-wrap {
-  height: 240px;
-  position: relative;
+.rejection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rejection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: fadeSlideUp 0.4s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rejection-item { animation: none; }
+}
+
+.rejection-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rejection-item__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.rejection-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rejection-item__count {
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rejection-item__rate {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rate--warn { color: var(--c-energy); }
+.rate--ok   { color: var(--c-brand); }
+
+/* ── Mini bar ── */
+.rejection-bar {
+  height: 6px;
+  background: var(--c-surface-2);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.rejection-bar__fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fill--warn { background: var(--c-energy); }
+.fill--ok   { background: var(--c-brand); }
+
+/* ── Reason list ── */
+.reason-list {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+}
+
+.reason-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+
+.reason-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--c-text-muted);
+  flex-shrink: 0;
+}
+
+.reason-label {
+  color: var(--c-text-muted);
+}
+
+.reason-count {
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
 }
 </style>

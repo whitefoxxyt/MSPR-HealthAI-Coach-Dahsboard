@@ -114,9 +114,11 @@ defineProps<{ report: EtlReport }>()
 
 .section-title {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--c-text);
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--c-brand);
 }
 
 .section-subtitle {
