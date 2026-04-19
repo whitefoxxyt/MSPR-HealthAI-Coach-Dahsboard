@@ -66,7 +66,7 @@ const confirmButtonClass = computed(() => {
 <style scoped>
 .confirm-dialog__message {
   margin: 0;
-  color: #374151;
+  color: var(--c-text);
   font-size: 0.9375rem;
   line-height: 1.5;
 }
@@ -76,16 +76,16 @@ const confirmButtonClass = computed(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  border-radius: 6px;
+  border-radius: calc(var(--radius) * 0.67);
   border: 1px solid transparent;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
 }
 
 .btn:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--c-brand);
   outline-offset: 2px;
 }
 
@@ -95,27 +95,27 @@ const confirmButtonClass = computed(() => {
 }
 
 .btn-secondary {
-  background: #ffffff;
-  border-color: #d1d5db;
-  color: #374151;
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text-muted);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--c-bg);
+  border-color: #94a3b8;
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--c-brand-dark);
 }
 
 .btn-danger {
-  background: #dc2626;
+  background: var(--c-danger);
   color: #ffffff;
 }
 
@@ -124,11 +124,11 @@ const confirmButtonClass = computed(() => {
 }
 
 .btn-success {
-  background: #059669;
+  background: var(--c-brand);
   color: #ffffff;
 }
 
 .btn-success:hover:not(:disabled) {
-  background: #047857;
+  background: var(--c-brand-dark);
 }
 </style>

@@ -65,28 +65,30 @@ const trendAriaLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 1.25rem 1.5rem;
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
 .metrics-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .metrics-card__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 8px;
-  background: #f3f4f6;
-  font-size: 1.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--c-surface-2);
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .metrics-card__content {
@@ -95,80 +97,82 @@ const trendAriaLabel = computed(() => {
 }
 
 .metrics-card__title {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
 .metrics-card__value {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #111827;
-  line-height: 1;
+  color: var(--c-text);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .metrics-card__subtitle {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.875rem;
-  color: #6b7280;
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
 }
 
 .metrics-card__trend {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .trend-up {
-  color: #059669;
-  background: #d1fae5;
+  color: var(--c-brand);
+  background: var(--c-brand-xlight);
 }
 
 .trend-down {
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--c-danger);
+  background: var(--c-danger-light);
 }
 
 .trend-neutral {
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--c-text-muted);
+  background: var(--c-surface-2);
 }
 
-/* Variants */
+/* Variants — icon background */
 .metrics-card.success .metrics-card__icon {
-  background: #d1fae5;
-  color: #059669;
+  background: var(--c-brand-xlight);
+  color: var(--c-brand);
 }
 
 .metrics-card.warning .metrics-card__icon {
-  background: #fef3c7;
-  color: #d97706;
+  background: var(--c-energy-light);
+  color: var(--c-energy);
 }
 
 .metrics-card.danger .metrics-card__icon {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--c-danger-light);
+  color: var(--c-danger);
 }
 
 .metrics-card.info .metrics-card__icon {
-  background: #dbeafe;
-  color: #2563eb;
+  background: var(--c-info-light);
+  color: var(--c-info);
 }
 
-/* Accessibilité */
 @media (prefers-reduced-motion: reduce) {
   .metrics-card {
     transition: none;
   }
-  
+
   .metrics-card:hover {
     transform: none;
   }

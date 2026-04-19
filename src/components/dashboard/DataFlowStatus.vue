@@ -67,50 +67,53 @@ function getErrorClass(errorRate: number): string {
 
 <style scoped>
 .data-flow-status {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--c-border);
   padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .data-flow-status__title {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-text);
 }
 
 .data-flow-status__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
 }
 
 .flow-card {
   padding: 1.25rem;
-  border-radius: 6px;
-  border: 2px solid #e5e7eb;
-  transition: all 0.2s;
+  border-radius: calc(var(--radius) * 0.75);
+  border: 1px solid var(--c-border);
+  border-left: 4px solid var(--c-border);
+  background: var(--c-surface);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .flow-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .flow-card.status-active {
-  border-color: #10b981;
-  background: #f0fdf4;
+  border-left-color: var(--c-brand);
+  background: var(--c-surface-2);
 }
 
 .flow-card.status-inactive {
-  border-color: #9ca3af;
-  background: #f9fafb;
+  border-left-color: var(--c-text-muted);
+  background: var(--c-surface);
 }
 
 .flow-card.status-error {
-  border-color: #ef4444;
-  background: #fef2f2;
+  border-left-color: var(--c-danger);
+  background: var(--c-surface-2);
 }
 
 .flow-card__header {
@@ -123,42 +126,45 @@ function getErrorClass(errorRate: number): string {
 
 .flow-card__name {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--c-text);
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .flow-card__badge {
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
 }
 
 .flow-card__badge.status-active {
-  background: #10b981;
-  color: white;
+  background: var(--c-brand);
+  color: #fff;
 }
 
 .flow-card__badge.status-inactive {
-  background: #9ca3af;
-  color: white;
+  background: #94a3b8;
+  color: #fff;
 }
 
 .flow-card__badge.status-error {
-  background: #ef4444;
-  color: white;
+  background: var(--c-danger);
+  color: #fff;
 }
 
 .flow-card__metrics {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .metric {
@@ -169,34 +175,26 @@ function getErrorClass(errorRate: number): string {
 }
 
 .metric__label {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 0.8125rem;
+  color: var(--c-text-muted);
 }
 
 .metric__value {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.metric__value.error-low {
-  color: #059669;
-}
+.metric__value.error-low  { color: var(--c-brand); }
+.metric__value.error-medium { color: var(--c-energy); }
+.metric__value.error-high { color: var(--c-danger); }
 
-.metric__value.error-medium {
-  color: #d97706;
-}
-
-.metric__value.error-high {
-  color: #dc2626;
-}
-
-/* Accessibilité */
 @media (prefers-reduced-motion: reduce) {
   .flow-card {
     transition: none;
   }
-  
+
   .flow-card:hover {
     transform: none;
   }

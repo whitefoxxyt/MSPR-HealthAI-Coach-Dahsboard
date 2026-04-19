@@ -93,8 +93,9 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(17, 24, 39, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.70);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .modal-panel {
@@ -104,24 +105,24 @@ watch(
   width: 100%;
   max-width: 520px;
   max-height: min(90vh, 720px);
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
   outline: none;
   overflow: hidden;
 }
 
 .modal-panel--danger {
-  border-top: 4px solid #dc2626;
+  border-top: 3px solid var(--c-danger);
 }
 
 .modal-panel--success {
-  border-top: 4px solid #059669;
+  border-top: 3px solid var(--c-brand);
 }
 
 .modal-panel--default {
-  border-top: 4px solid #3b82f6;
+  border-top: 4px solid var(--c-brand);
 }
 
 .modal-header {
@@ -130,15 +131,15 @@ watch(
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface-2);
 }
 
 .modal-title {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--c-text);
 }
 
 .modal-close {
@@ -151,20 +152,20 @@ watch(
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: #6b7280;
+  color: var(--c-text-muted);
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .modal-close:hover {
-  background: #fff;
-  border-color: #e5e7eb;
-  color: #111827;
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
 }
 
 .modal-close:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--c-brand);
   outline-offset: 2px;
 }
 
@@ -172,7 +173,7 @@ watch(
   flex: 1;
   padding: 1.5rem;
   overflow-y: auto;
-  color: #1f2937;
+  color: var(--c-text);
   font-size: 0.9375rem;
   line-height: 1.5;
 }
@@ -183,8 +184,8 @@ watch(
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-2);
 }
 
 /* Transitions */
