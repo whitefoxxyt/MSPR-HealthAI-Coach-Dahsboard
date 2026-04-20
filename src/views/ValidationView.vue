@@ -794,12 +794,12 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: var(--c-info);
+  background: var(--c-info-strong);
   color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #0070d6;
+  background: #004fa3;
 }
 
 .btn-success {
@@ -868,12 +868,12 @@ onMounted(async () => {
 }
 
 .filter-tab--active {
-  background: var(--c-info);
+  background: var(--c-info-strong);
   color: #ffffff;
 }
 
 .filter-tab--active:hover {
-  background: #0070d6;
+  background: #004fa3;
 }
 
 .selection-count {

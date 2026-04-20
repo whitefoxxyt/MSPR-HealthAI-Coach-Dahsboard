@@ -21,7 +21,7 @@
             <option value="90d">90 jours</option>
           </select>
         </label>
-        <button class="btn btn--ghost" type="button" :disabled="loading" @click="refreshAll" aria-label="Rafraîchir les données">
+        <button class="btn btn--ghost" type="button" :disabled="loading" @click="refreshAll" aria-label="Actualiser les données">
           <font-awesome-icon :icon="['fas', 'arrows-rotate']" :class="{ spinning: loading }" aria-hidden="true" />
           Actualiser
         </button>
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 .action-btn:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
 
 .action-btn--warn  { background: var(--c-energy); color: #000; }
-.action-btn--info  { background: var(--c-info);   color: #fff; }
+.action-btn--info  { background: var(--c-info-strong); color: #fff; }
 .action-btn--muted { background: var(--c-surface); color: var(--c-text); border-color: var(--c-border); }
 .action-btn--muted:hover { background: var(--c-surface-2); }
 

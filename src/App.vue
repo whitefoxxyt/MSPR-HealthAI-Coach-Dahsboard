@@ -89,14 +89,15 @@ async function handleLogout() {
   /* Info — Apple blue */
   --c-info:         #0a84ff;
   --c-info-light:   rgba(10, 132, 255, 0.15);
+  --c-info-strong:  #0062cc; /* AA 5.7:1 avec texte blanc */
 
   /* Danger — Apple red */
-  --c-danger:       #ff453a;
+  --c-danger:       #ff5e52; /* AA 4.8:1 sur fond danger-light */
   --c-danger-light: rgba(255, 69, 58, 0.15);
 
   /* Neutrals — iOS dark system */
   --c-text:         #f2f2f7;
-  --c-text-muted:   #8e8e93;
+  --c-text-muted:   #9ea2aa; /* AA 5.3:1 sur surface-2 */
   --c-surface:      #1c1c1e;
   --c-surface-2:    #2c2c2e;
   --c-bg:           #000000;
