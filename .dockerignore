@@ -1,0 +1,31 @@
+# Dépendances
+node_modules
+
+# Build output
+dist
+
+# Logs
+*.log
+npm-debug.log*
+
+# Secrets & configuration locale
+.env
+.env.local
+
+# Git & outillage
+.git
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# IDE
+.vscode
+.idea
+
+# Divers
+README.md
+.eslintcache
