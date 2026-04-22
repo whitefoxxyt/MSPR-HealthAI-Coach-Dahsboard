@@ -4,49 +4,61 @@ Interface web d'administration pour la gestion de la qualité des données du pr
 
 ## 📋 Vue d'ensemble
 
-Ce dashboard permet aux équipes internes de :
+Ce dashboard permet aux équipes internes (admins, data scientists) de :
 
+- 🔐 **S'authentifier** via le microservice MSPR-AUTH (better-auth) : login / register / reset password
 - 📊 **Consulter les métriques de qualité** : valeurs manquantes, doublons, anomalies, statut des flux
 - 📈 **Analyser les performances globales** : progression utilisateurs, nutrition, activité, KPIs business
 - 🧹 **Nettoyer les données** : correction manuelle, édition inline, suppression, normalisation
 - ✓ **Gérer le workflow de validation** : approuver ou rejeter les données en attente
 - 📥 **Exporter les données** : export au format JSON ou CSV
 
+> Le dashboard est destiné à l'administration et à la data science, pas aux utilisateurs finaux de la plateforme HealthAI Coach.
+
 ## 🛠️ Stack technique
 
-- **Vue 3** avec Composition API (`<script setup>`)
-- **Vue Router** pour la navigation entre les vues
-- **Pinia** pour la gestion de l'état global
-- **Vitest** pour les tests unitaires
-- **TypeScript** pour le typage statique
-- **Vite** comme bundler et serveur de développement
+- **Vue 3.5** avec Composition API (`<script setup>`)
+- **Vue Router 5** pour la navigation et la protection des routes (`requireAuth`)
+- **Pinia 3** pour la gestion de l'état global (auth, dataQuality, validation)
+- **TypeScript 6** pour le typage statique
+- **Vite 8** comme bundler et serveur de développement
+- **Vitest 4** pour les tests unitaires
+- **oxlint + ESLint + Prettier** pour le lint et le formatage
+- **Chart.js 4** pour les visualisations analytics
+- **FontAwesome** pour l'iconographie
+- **better-auth client** (via `src/services/auth.ts`) pour l'interaction avec le microservice MSPR-AUTH
 
 ## 📁 Structure du projet
 
 ```
 src/
 ├── views/                    # Vues principales de l'application
-│   ├── DashboardView.vue     # Tableau de bord avec métriques
-│   ├── DataCleaningView.vue  # Interface de nettoyage des anomalies
-│   └── ValidationView.vue    # Workflow de validation/approbation
+│   ├── AuthView.vue          # Login / register / reset password (route /)
+│   ├── DashboardView.vue     # Tableau de bord avec métriques (route /dashboard)
+│   ├── DataCleaningView.vue  # Interface de nettoyage des anomalies (route /data-cleaning)
+│   └── ValidationView.vue    # Workflow de validation/approbation (route /validation)
 ├── components/               # Composants réutilisables
 │   ├── common/               # Composants génériques
-│   │   └── MetricsCard.vue   # Carte d'affichage de métrique
-│   ├── dashboard/            # Composants du dashboard
-│   │   └── DataFlowStatus.vue # Statut des flux de données
+│   │   ├── MetricsCard.vue   # Carte d'affichage de métrique
+│   │   ├── BaseModal.vue     # Modale de base réutilisable
+│   │   └── ConfirmDialog.vue # Dialogue de confirmation
+│   └── dashboard/            # Composants du dashboard
+│       └── DataFlowStatus.vue # Statut des flux de données
 ├── stores/                   # Stores Pinia
+│   ├── auth.ts               # Store d'authentification (utilisateur courant, session)
 │   ├── dataQuality.ts        # Store pour métriques et anomalies
 │   ├── validation.ts         # Store pour workflow de validation
 │   └── __tests__/            # Tests unitaires des stores
-├── services/                 # Services API
-│   └── api.ts                # Client API avec données mockées
+├── services/                 # Clients des microservices
+│   ├── api.ts                # Client API métier (MSPR-API, port 8080)
+│   └── auth.ts               # Client better-auth (MSPR-AUTH, port 3000)
 ├── types/                    # Types et interfaces TypeScript
 │   └── index.ts              # Définitions de types
 ├── utils/                    # Fonctions utilitaires
 │   ├── helpers.ts            # Helpers de formatage et conversion
 │   └── __tests__/            # Tests unitaires des utils
 └── router/                   # Configuration du routeur
-    └── index.ts              # Définition des routes
+    └── index.ts              # Définition des routes + guards requireAuth / guestOnly
 ```
 
 ## 🚀 Installation et lancement
@@ -67,10 +79,13 @@ npm install
 Créez un fichier `.env` à la racine du projet (ou utilisez `.env.example`) :
 
 ```env
-# Utilisation des données mockées (true par défaut)
+# Utilisation des données mockées (true par défaut en dev)
 VITE_USE_MOCK=true
 
-# URL de l'API backend Java (à configurer lors de l'intégration)
+# URL du service d'authentification (MSPR-AUTH, Hono + better-auth)
+VITE_AUTH_BASE_URL=http://localhost:3000
+
+# URL de l'API backend Java (MSPR-API, Spring Boot)
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
@@ -126,7 +141,7 @@ npm run type-check
 
 ### Linting et formatage
 
-Lance le linter et corrige automatiquement les erreurs :
+Lance les deux linters (oxlint puis ESLint) et corrige automatiquement les erreurs :
 
 ```bash
 npm run lint
@@ -138,11 +153,16 @@ Formate le code avec Prettier :
 npm run format
 ```
 
-## 🔌 Intégration avec le backend
+## 🔌 Intégration avec les microservices
 
-### Mode Mock (par défaut)
+Le front interagit avec deux microservices :
 
-Par défaut, l'application utilise des données mockées définies dans `src/services/api.ts`. Ce mode permet de développer et tester l'interface sans backend actif.
+- **MSPR-AUTH** (`VITE_AUTH_BASE_URL`, port 3000) : authentification via better-auth (login, register, session, reset password)
+- **MSPR-API** (`VITE_API_BASE_URL`, port 8080) : API métier Spring Boot (qualité des données, export, CRUD)
+
+### Mode Mock (par défaut en dev)
+
+Lorsque `VITE_USE_MOCK=true`, l'application utilise des données mockées définies dans `src/services/api.ts`. Ce mode permet de développer et tester l'interface sans backend métier actif. L'authentification reste, elle, branchée sur le vrai service AUTH.
 
 ### Intégration avec l'API réelle
 
@@ -155,18 +175,22 @@ Pour connecter l'application à l'API backend Java :
    ```
 
 2. Le service API (`src/services/api.ts`) utilise automatiquement les vrais endpoints :
-   - `GET /data-quality/metrics` : Récupère les métriques
-   - `GET /data-quality/anomalies` : Liste les anomalies
-    - `GET /data-quality/flows` : Statut des flux de données
-    - `GET /analytics/overview` : Données analytics (utilisateurs, nutrition, fitness, business)
-    - `PUT /data-quality/anomalies/:id` : Mise à jour d'une anomalie
-   - `DELETE /data-quality/anomalies/:id` : Suppression d'une anomalie
-   - `GET /validation/records` : Liste des enregistrements à valider
-   - `PUT /validation/records/:id` : Mise à jour d'un enregistrement
-   - `POST /validation/records/:id/validate` : Validation d'un enregistrement
-   - `POST /export` : Export des données
+   - `GET /data-quality/metrics` — Récupère les métriques
+   - `GET /data-quality/anomalies` — Liste les anomalies
+   - `GET /data-quality/flows` — Statut des flux de données
+   - `GET /analytics/overview` — Données analytics (utilisateurs, nutrition, fitness, business)
+   - `PUT /data-quality/anomalies/:id` — Mise à jour d'une anomalie
+   - `DELETE /data-quality/anomalies/:id` — Suppression d'une anomalie
+   - `GET /validation/records` — Liste des enregistrements à valider
+   - `PUT /validation/records/:id` — Mise à jour d'un enregistrement
+   - `POST /validation/records/:id/validate` — Validation d'un enregistrement
+   - `POST /export` — Export des données
 
-3. Ajoutez l'authentification JWT dans `src/services/api.ts` si nécessaire.
+3. Le JWT émis par MSPR-AUTH (`GET /api/jwt`) est injecté automatiquement en en-tête `Authorization: Bearer <token>` pour chaque requête vers MSPR-API.
+
+## 🐳 Docker
+
+Un `Dockerfile` multi-stage (builder Node 22 + image finale `serve`) est fourni. Il accepte les `ARG` `VITE_AUTH_BASE_URL`, `VITE_API_BASE_URL`, `VITE_USE_MOCK` pour injecter les URLs à la build. Le container est orchestré via le `docker-compose.yml` à la racine du monorepo MSPR.
 
 ## ♿ Accessibilité (RGAA niveau AA)
 
@@ -183,7 +207,14 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 
 ## 📊 Fonctionnalités principales
 
-### 1. Dashboard de pilotage
+### 1. Authentification
+
+- Login / register / reset password via better-auth (MSPR-AUTH)
+- Vérification d'email avec bootstrap automatique de la session côté front
+- Double stockage : cookie HTTP-only (Better Auth) + localStorage (résilience au reload)
+- Guards `requireAuth` et `guestOnly` appliqués au niveau du router
+
+### 2. Dashboard de pilotage
 
 - Métriques de qualité des données en temps réel
 - Score de santé global
@@ -191,7 +222,7 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 - Visualisations analytics (utilisateurs, nutrition, fitness, business)
 - Actions rapides vers les autres sections
 
-### 2. Nettoyage des données
+### 3. Nettoyage des données
 
 - Visualisation des anomalies détectées
 - Édition inline des valeurs
@@ -199,7 +230,7 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 - Actions en lot (suppression, correction)
 - Export des données corrigées
 
-### 3. Workflow de validation
+### 4. Workflow de validation
 
 - Liste des enregistrements en attente
 - Détails complets de chaque enregistrement
@@ -207,7 +238,7 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 - Historique de validation
 - Filtrage par statut
 
-### 4. Export de données
+### 5. Export de données
 
 - Export au format JSON ou CSV
 - Inclusion optionnelle des métadonnées
@@ -223,9 +254,9 @@ Le projet inclut des tests unitaires pour :
 
 Couverture de test : > 80% sur les stores et utils critiques.
 
-## 🎨 Personnalisation
+## 🎨 Design
 
-### Styles
+Le dashboard utilise un **design system sombre** inspiré d'iOS Dark : fonds sombres, accents bleus/verts, cartes avec effet de glassmorphism léger, animations fluides via `requestAnimationFrame`.
 
 Les styles sont définis au niveau des composants avec `<style scoped>`. Pour personnaliser le thème :
 
@@ -259,8 +290,9 @@ Pour toute question ou problème :
 
 ## 🔮 Roadmap
 
+- [x] Mode sombre (design system iOS Dark)
+- [x] Authentification via MSPR-AUTH
 - [ ] Notifications en temps réel (WebSocket)
-- [ ] Mode sombre
 - [ ] Personnalisation du dashboard par utilisateur
 - [ ] Export automatisé programmé
 - [ ] Internationalisation (i18n) pour support multilingue
