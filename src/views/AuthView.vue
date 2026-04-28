@@ -153,7 +153,7 @@ async function submitLogin() {
   localError.value = null
   try {
     await authStore.login(loginForm.value.email, loginForm.value.password)
-    await router.push({ name: 'dashboard' })
+    await router.push(authStore.defaultHomePath)
   } catch (e) {
     localError.value = e instanceof Error ? e.message : 'Erreur lors de la connexion'
   }
@@ -167,7 +167,7 @@ async function submitRegister() {
   }
   try {
     await authStore.register(registerForm.value.name, registerForm.value.email, registerForm.value.password)
-    await router.push({ name: 'dashboard' })
+    await router.push(authStore.defaultHomePath)
   } catch (e) {
     localError.value = e instanceof Error ? e.message : 'Erreur lors de l’inscription'
   }

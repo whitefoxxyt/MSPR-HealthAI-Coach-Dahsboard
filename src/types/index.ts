@@ -48,13 +48,18 @@ export interface DataRecord {
   validatedAt?: string
 }
 
-// Utilisateur de l'interface d'administration
-export interface AdminUser {
+// Utilisateur authentifié de l'application
+export type UserRole = 'admin' | 'validator' | 'viewer' | 'user'
+
+export interface AuthUser {
   id: string
   username: string
-  role: 'admin' | 'validator' | 'viewer'
+  role: UserRole
   email: string
 }
+
+// Alias conservé pour compatibilité avec le code admin existant
+export type AdminUser = AuthUser
 
 // Tokens de session d'administration
 export interface AuthTokens {
@@ -65,7 +70,7 @@ export interface AuthTokens {
 
 // Session d'authentification persistée localement
 export interface AuthSession {
-  user: AdminUser
+  user: AuthUser
   tokens: AuthTokens
 }
 
@@ -141,4 +146,63 @@ export interface PaginatedResponse<T> {
   page: number
   pageSize: number
   totalPages: number
+}
+
+export interface UserDashboardMetrics {
+  streakDays: number
+  weeklyGoalProgress: number
+  hydrationProgress: number
+  caloriesConsumed: number
+  caloriesTarget: number
+}
+
+export interface UserProfile {
+  id: string
+  fullName: string
+  email: string
+  objective: string
+  age: number
+  heightCm: number
+  weightKg: number
+  dailyCalorieTarget: number
+  dailyHydrationTargetLiters: number
+}
+
+export interface TrendPoint {
+  label: string
+  value: number
+}
+
+export interface MacroDistribution {
+  label: 'Protéines' | 'Glucides' | 'Lipides'
+  value: number
+}
+
+export interface NutritionSummary {
+  date: string
+  consumedCalories: number
+  targetCalories: number
+  proteinGrams: number
+  carbsGrams: number
+  fatsGrams: number
+  hydrationLiters: number
+  hydrationTargetLiters: number
+  mealCount: number
+  adherenceRate: number
+  weeklyCaloriesTrend: TrendPoint[]
+  macroDistribution: MacroDistribution[]
+}
+
+export interface ActivitySummary {
+  date: string
+  steps: number
+  stepsTarget: number
+  activeMinutes: number
+  workoutCount: number
+  caloriesBurned: number
+  weeklyStepsTrend: TrendPoint[]
+  intensityDistribution: Array<{
+    label: 'Faible' | 'Modérée' | 'Élevée'
+    value: number
+  }>
 }

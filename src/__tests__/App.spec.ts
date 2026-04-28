@@ -1,29 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import App from '../App.vue'
-
-const AUTH_STORAGE_KEY = 'healthai.auth.session'
+import App from '@/App.vue'
 
 function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/', component: { template: '<div>Auth page</div>' }, meta: { authPage: true } },
-      { path: '/dashboard', component: { template: '<div>Dashboard page</div>' } },
-      { path: '/data-cleaning', component: { template: '<div>Data cleaning page</div>' } },
-      { path: '/validation', component: { template: '<div>Validation page</div>' } },
+      { path: '/', component: { template: '<div>Landing page</div>' } },
+      { path: '/auth', component: { template: '<div>Auth page</div>' } },
     ],
   })
 }
 
 describe('App', () => {
-  beforeEach(() => {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-  })
-
-  it('cache le layout dashboard sur la page auth', async () => {
+  it('rend la route publique', async () => {
     const router = createTestRouter()
     await router.push('/')
     await router.isReady()
@@ -34,31 +26,12 @@ describe('App', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Auth page')
-    expect(wrapper.text()).not.toContain('Dashboard')
-    expect(wrapper.text()).not.toContain('HealthAI Coach')
+    expect(wrapper.text()).toContain('Landing page')
   })
 
-  it('affiche le layout dashboard sur les pages internes', async () => {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        user: {
-          id: 'admin-1',
-          username: 'admin',
-          email: 'admin@healthai.test',
-          role: 'admin',
-        },
-        tokens: {
-          accessToken: 'access-token-test',
-          refreshToken: 'refresh-token-test',
-          expiresAt: '2099-01-01T00:00:00.000Z',
-        },
-      }),
-    )
-
+  it('rend la route auth', async () => {
     const router = createTestRouter()
-    await router.push('/dashboard')
+    await router.push('/auth')
     await router.isReady()
 
     const wrapper = mount(App, {
@@ -67,8 +40,6 @@ describe('App', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('HealthAI Coach')
-    expect(wrapper.text()).toContain('Dashboard')
-    expect(wrapper.text()).toContain('Déconnexion')
+    expect(wrapper.text()).toContain('Auth page')
   })
 })

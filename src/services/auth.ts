@@ -1,4 +1,4 @@
-import type { AdminUser, AuthSession } from '@/types'
+import type { AuthSession, UserRole, AuthUser } from '@/types'
 
 const AUTH_SESSION_STORAGE_KEY = 'healthai.auth.session'
 const ACCESS_TOKEN_TTL_MS = 1000 * 60 * 60 // 1h
@@ -49,13 +49,21 @@ function isExpired(expiresAt: string): boolean {
   return parsedDate <= Date.now()
 }
 
-function createMockUserFromEmail(email: string): AdminUser {
+function inferRoleFromEmail(email: string): UserRole {
+  const lowerEmail = email.toLowerCase()
+  if (lowerEmail.includes('admin') || lowerEmail.endsWith('@healthai-admin.test')) {
+    return 'admin'
+  }
+  return 'user'
+}
+
+function createMockUserFromEmail(email: string): AuthUser {
   const [username] = email.split('@')
   return {
-    id: `admin_${Date.now()}`,
+    id: `user_${Date.now()}`,
     username: username || 'admin',
     email,
-    role: 'admin',
+    role: inferRoleFromEmail(email),
   }
 }
 

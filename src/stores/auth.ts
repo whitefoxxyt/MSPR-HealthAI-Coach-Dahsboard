@@ -11,6 +11,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => session.value !== null)
   const currentUser = computed(() => session.value?.user ?? null)
+  const isAdmin = computed(() => {
+    const role = currentUser.value?.role
+    return role === 'admin' || role === 'validator' || role === 'viewer'
+  })
+  const isSessionExpired = computed(() => {
+    if (!session.value) return true
+    return Date.parse(session.value.tokens.expiresAt) <= Date.now()
+  })
+  const defaultHomePath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 
   function hydrateFromStorage() {
     session.value = authSessionManager.getSession()
@@ -107,6 +116,9 @@ export const useAuthStore = defineStore('auth', () => {
     infoMessage,
     isAuthenticated,
     currentUser,
+    isAdmin,
+    isSessionExpired,
+    defaultHomePath,
     hydrateFromStorage,
     clearMessages,
     login,

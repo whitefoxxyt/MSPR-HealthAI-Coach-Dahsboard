@@ -1,54 +1,94 @@
 /**
- * Service API pour communiquer avec le backend
- * Utilise des données mockées en attendant l'intégration réelle
+ * Service API pour communiquer avec le backend.
+ * Utilise un mode mock par défaut pour accélérer le développement frontend.
  */
 
 import type {
-  DataQualityMetrics,
+  ActivitySummary,
+  AnalyticsOverview,
   DataAnomaly,
-  DataRecord,
   DataFlowStats,
+  DataQualityMetrics,
+  DataRecord,
+  ExportOptions,
+  NutritionSummary,
   PaginatedResponse,
   PaginationParams,
-  ExportOptions,
+  UserDashboardMetrics,
+  UserProfile,
   ValidationStatus,
-  AnalyticsOverview,
 } from '@/types'
 import { authSessionManager } from '@/services/auth'
 
-// Configuration de l'API
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false' // Par défaut, on utilise le mock
+const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
-/**
- * Classe utilitaire pour les appels API
- */
+export class ApiError extends Error {
+  status: number
+  statusText: string
+  payload: unknown
+
+  constructor(status: number, statusText: string, message: string, payload: unknown = null) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.statusText = statusText
+    this.payload = payload
+  }
+}
+
+function buildQuery<T extends object>(params?: T): string {
+  if (!params) return ''
+  const query = new URLSearchParams()
+  Object.entries(params as Record<string, unknown>).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      query.set(key, String(value))
+    }
+  })
+  const asString = query.toString()
+  return asString ? `?${asString}` : ''
+}
+
+async function parseErrorPayload(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return response.json()
+  }
+  return response.text()
+}
+
+function getStatusMessage(status: number): string {
+  if (status === 401) return 'Session invalide ou expirée. Veuillez vous reconnecter.'
+  if (status === 403) return 'Action non autorisée.'
+  if (status === 404) return 'Ressource non trouvée.'
+  if (status >= 500) return 'Erreur serveur. Merci de réessayer plus tard.'
+  return 'Erreur API.'
+}
+
 class ApiClient {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
     const accessToken = authSessionManager.getAccessToken()
-    
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    }
 
     const response = await fetch(url, {
       ...options,
       headers: {
-        ...defaultHeaders,
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...options.headers,
       },
     })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      const payload = await parseErrorPayload(response)
+      throw new ApiError(response.status, response.statusText, getStatusMessage(response.status), payload)
     }
 
-    return response.json()
+    if (response.status === 204) {
+      return undefined as T
+    }
+
+    return response.json() as Promise<T>
   }
 
   get<T>(endpoint: string): Promise<T> {
@@ -56,17 +96,11 @@ class ApiClient {
   }
 
   post<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    return this.request<T>(endpoint, { method: 'POST', body: JSON.stringify(data) })
   }
 
   put<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+    return this.request<T>(endpoint, { method: 'PUT', body: JSON.stringify(data) })
   }
 
   delete<T>(endpoint: string): Promise<T> {
@@ -76,9 +110,6 @@ class ApiClient {
 
 const apiClient = new ApiClient()
 
-/**
- * Données mockées pour le développement
- */
 const mockData = {
   metrics: {
     totalRecords: 15847,
@@ -89,7 +120,6 @@ const mockData = {
     dataFlowStatus: 'active' as const,
     lastUpdate: new Date().toISOString(),
   },
-
   anomalies: [
     {
       id: 'anom-1',
@@ -127,7 +157,6 @@ const mockData = {
       status: 'pending' as const,
     },
   ] as DataAnomaly[],
-
   dataFlows: [
     {
       name: 'Profils utilisateurs',
@@ -162,7 +191,6 @@ const mockData = {
       errorRate: 15.7,
     },
   ] as DataFlowStats[],
-
   analytics: {
     ageDistribution: [
       { label: '18-25 ans', value: 24 },
@@ -176,11 +204,7 @@ const mockData = {
       { label: 'Forme générale', value: 22 },
       { label: 'Santé métabolique', value: 10 },
     ],
-    progressionRateByPeriod: {
-      '7d': 62.4,
-      '30d': 74.8,
-      '90d': 81.3,
-    },
+    progressionRateByPeriod: { '7d': 62.4, '30d': 74.8, '90d': 81.3 },
     userProgressionTrend: {
       '7d': [
         { label: 'J-6', value: 55 },
@@ -245,13 +269,8 @@ const mockData = {
       { label: 'Modérée', value: 46 },
       { label: 'Élevée', value: 20 },
     ],
-    businessKpis: {
-      engagementRate: 72.6,
-      premiumConversionRate: 18.4,
-      satisfactionRate: 91.2,
-    },
+    businessKpis: { engagementRate: 72.6, premiumConversionRate: 18.4, satisfactionRate: 91.2 },
   } as AnalyticsOverview,
-
   records: [
     {
       id: 'rec-1',
@@ -283,45 +302,105 @@ const mockData = {
       validatedAt: '2026-04-06T15:30:00Z',
     },
   ] as DataRecord[],
+  userProfile: {
+    id: 'user-42',
+    fullName: 'Marie Martin',
+    email: 'marie@healthai.test',
+    objective: 'Perte de poids',
+    age: 31,
+    heightCm: 168,
+    weightKg: 66,
+    dailyCalorieTarget: 1900,
+    dailyHydrationTargetLiters: 2.2,
+  } as UserProfile,
+  userMetrics: {
+    streakDays: 12,
+    weeklyGoalProgress: 78,
+    hydrationProgress: 86,
+    caloriesConsumed: 1720,
+    caloriesTarget: 1900,
+  } as UserDashboardMetrics,
+  nutritionSummary: {
+    date: new Date().toISOString(),
+    consumedCalories: 1720,
+    targetCalories: 1900,
+    proteinGrams: 96,
+    carbsGrams: 174,
+    fatsGrams: 62,
+    hydrationLiters: 1.9,
+    hydrationTargetLiters: 2.2,
+    mealCount: 4,
+    adherenceRate: 90,
+    weeklyCaloriesTrend: [
+      { label: 'Lun', value: 1800 },
+      { label: 'Mar', value: 1920 },
+      { label: 'Mer', value: 1760 },
+      { label: 'Jeu', value: 1840 },
+      { label: 'Ven', value: 1720 },
+      { label: 'Sam', value: 1890 },
+      { label: 'Dim', value: 1700 },
+    ],
+    macroDistribution: [
+      { label: 'Protéines', value: 28 },
+      { label: 'Glucides', value: 44 },
+      { label: 'Lipides', value: 28 },
+    ],
+  } as NutritionSummary,
+  activitySummary: {
+    date: new Date().toISOString(),
+    steps: 8450,
+    stepsTarget: 10000,
+    activeMinutes: 56,
+    workoutCount: 1,
+    caloriesBurned: 480,
+    weeklyStepsTrend: [
+      { label: 'Lun', value: 7100 },
+      { label: 'Mar', value: 8100 },
+      { label: 'Mer', value: 9500 },
+      { label: 'Jeu', value: 10200 },
+      { label: 'Ven', value: 8450 },
+      { label: 'Sam', value: 9300 },
+      { label: 'Dim', value: 7800 },
+    ],
+    intensityDistribution: [
+      { label: 'Faible', value: 35 },
+      { label: 'Modérée', value: 45 },
+      { label: 'Élevée', value: 20 },
+    ],
+  } as ActivitySummary,
 }
 
-/**
- * API Service - Métriques de qualité des données
- */
 export const dataQualityApi = {
   async getMetrics(): Promise<DataQualityMetrics> {
-    if (USE_MOCK) {
-      return Promise.resolve(mockData.metrics)
-    }
+    if (USE_MOCK) return Promise.resolve(mockData.metrics)
     return apiClient.get<DataQualityMetrics>('/data-quality/metrics')
   },
 
   async getAnomalies(params?: PaginationParams): Promise<PaginatedResponse<DataAnomaly>> {
     if (USE_MOCK) {
       const data = mockData.anomalies
+      const page = params?.page || 1
+      const pageSize = params?.pageSize || 10
       return Promise.resolve({
         data,
         total: data.length,
-        page: params?.page || 1,
-        pageSize: params?.pageSize || 10,
-        totalPages: Math.ceil(data.length / (params?.pageSize || 10)),
+        page,
+        pageSize,
+        totalPages: Math.ceil(data.length / pageSize),
       })
     }
-    const query = new URLSearchParams(params as unknown as Record<string, string>).toString()
-    return apiClient.get<PaginatedResponse<DataAnomaly>>(`/data-quality/anomalies?${query}`)
+    return apiClient.get<PaginatedResponse<DataAnomaly>>(
+      `/data-quality/anomalies${buildQuery(params)}`,
+    )
   },
 
   async getDataFlowStats(): Promise<DataFlowStats[]> {
-    if (USE_MOCK) {
-      return Promise.resolve(mockData.dataFlows)
-    }
+    if (USE_MOCK) return Promise.resolve(mockData.dataFlows)
     return apiClient.get<DataFlowStats[]>('/data-quality/flows')
   },
 
   async getAnalyticsOverview(): Promise<AnalyticsOverview> {
-    if (USE_MOCK) {
-      return Promise.resolve(mockData.analytics)
-    }
+    if (USE_MOCK) return Promise.resolve(mockData.analytics)
     return apiClient.get<AnalyticsOverview>('/analytics/overview')
   },
 
@@ -344,31 +423,29 @@ export const dataQualityApi = {
   },
 }
 
-/**
- * API Service - Validation workflow
- */
 export const validationApi = {
   async getRecords(params?: PaginationParams & { status?: ValidationStatus }): Promise<PaginatedResponse<DataRecord>> {
     if (USE_MOCK) {
       let data = mockData.records
       if (params?.status) {
-        data = data.filter((r) => r.status === params.status)
+        data = data.filter((record) => record.status === params.status)
       }
+      const page = params?.page || 1
+      const pageSize = params?.pageSize || 10
       return Promise.resolve({
         data,
         total: data.length,
-        page: params?.page || 1,
-        pageSize: params?.pageSize || 10,
-        totalPages: Math.ceil(data.length / (params?.pageSize || 10)),
+        page,
+        pageSize,
+        totalPages: Math.ceil(data.length / pageSize),
       })
     }
-    const query = new URLSearchParams(params as unknown as Record<string, string>).toString()
-    return apiClient.get<PaginatedResponse<DataRecord>>(`/validation/records?${query}`)
+    return apiClient.get<PaginatedResponse<DataRecord>>(`/validation/records${buildQuery(params)}`)
   },
 
   async updateRecord(id: string, data: Partial<DataRecord>): Promise<DataRecord> {
     if (USE_MOCK) {
-      const record = mockData.records.find((r) => r.id === id)
+      const record = mockData.records.find((item) => item.id === id)
       if (!record) throw new Error('Record not found')
       return Promise.resolve({ ...record, ...data, updatedAt: new Date().toISOString() })
     }
@@ -377,7 +454,7 @@ export const validationApi = {
 
   async validateRecord(id: string, status: 'approved' | 'rejected'): Promise<DataRecord> {
     if (USE_MOCK) {
-      const record = mockData.records.find((r) => r.id === id)
+      const record = mockData.records.find((item) => item.id === id)
       if (!record) throw new Error('Record not found')
       return Promise.resolve({
         ...record,
@@ -391,34 +468,56 @@ export const validationApi = {
   },
 }
 
-/**
- * API Service - Export de données
- */
+export const userApi = {
+  async getProfile(): Promise<UserProfile> {
+    if (USE_MOCK) return Promise.resolve(mockData.userProfile)
+    return apiClient.get<UserProfile>('/user/profile')
+  },
+
+  async getDashboardMetrics(): Promise<UserDashboardMetrics> {
+    if (USE_MOCK) return Promise.resolve(mockData.userMetrics)
+    return apiClient.get<UserDashboardMetrics>('/user/metrics')
+  },
+
+  async getNutritionSummary(): Promise<NutritionSummary> {
+    if (USE_MOCK) return Promise.resolve(mockData.nutritionSummary)
+    return apiClient.get<NutritionSummary>('/user/nutrition')
+  },
+
+  async getActivitySummary(): Promise<ActivitySummary> {
+    if (USE_MOCK) return Promise.resolve(mockData.activitySummary)
+    return apiClient.get<ActivitySummary>('/user/activity')
+  },
+}
+
 export const exportApi = {
   async exportData(options: ExportOptions): Promise<Blob> {
     if (USE_MOCK) {
-      // Simulation d'export
-      const data = options.format === 'json' 
-        ? JSON.stringify(mockData.records, null, 2)
-        : this.convertToCSV(mockData.records)
-      
-      return Promise.resolve(new Blob([data], { 
-        type: options.format === 'json' ? 'application/json' : 'text/csv' 
-      }))
+      const data =
+        options.format === 'json'
+          ? JSON.stringify(mockData.records, null, 2)
+          : this.convertToCSV(mockData.records)
+      return Promise.resolve(
+        new Blob([data], { type: options.format === 'json' ? 'application/json' : 'text/csv' }),
+      )
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/export`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options),
     })
-    
+
+    if (!response.ok) {
+      const payload = await parseErrorPayload(response)
+      throw new ApiError(response.status, response.statusText, getStatusMessage(response.status), payload)
+    }
+
     return response.blob()
   },
 
   convertToCSV(data: DataRecord[]): string {
     if (data.length === 0) return ''
-    
     const headers = ['ID', 'Type', 'Status', 'Created At', 'Updated At']
     const rows = data.map((record) => [
       record.id,
@@ -427,7 +526,6 @@ export const exportApi = {
       record.createdAt,
       record.updatedAt,
     ])
-    
     return [headers, ...rows].map((row) => row.join(',')).join('\n')
   },
 }

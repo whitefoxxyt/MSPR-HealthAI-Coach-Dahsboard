@@ -252,7 +252,7 @@
     <section class="quick-actions">
       <h2 class="section-title">Actions rapides</h2>
       <div class="actions-grid">
-        <RouterLink to="/data-cleaning" class="action-card">
+        <RouterLink to="/admin/data-cleaning" class="action-card">
           <span class="action-card__icon" aria-hidden="true">🧹</span>
           <h3 class="action-card__title">Nettoyage des données</h3>
           <p class="action-card__description">
@@ -261,7 +261,7 @@
           <span class="action-card__badge">{{ pendingAnomaliesCount }} anomalies</span>
         </RouterLink>
 
-        <RouterLink to="/validation" class="action-card">
+        <RouterLink to="/admin/validation" class="action-card">
           <span class="action-card__icon" aria-hidden="true">✓</span>
           <h3 class="action-card__title">Workflow de validation</h3>
           <p class="action-card__description">
