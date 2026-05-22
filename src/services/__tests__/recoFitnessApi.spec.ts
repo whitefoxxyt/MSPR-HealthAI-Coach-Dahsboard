@@ -91,6 +91,72 @@ describe('recoFitnessApi', () => {
     })
   })
 
+  describe('generateProgram', () => {
+    const PROGRAM_PAYLOAD = {
+      program_id: 'prog-123',
+      user_id: 'user-1',
+      duration_weeks: 4,
+      scoring_strategy: 'hybrid_rank_fusion' as const,
+      tier_at_generation: 'premium' as const,
+      weeks: [
+        [
+          [
+            {
+              id: 12,
+              name: 'Bench Press',
+              target_muscles: ['chest', 'triceps'],
+              equipment: ['barbell', 'bench'],
+              difficulty: 'intermediate',
+              category: 'compound',
+            },
+          ],
+        ],
+      ],
+      created_at: '2026-05-22T12:00:00Z',
+    }
+
+    it('issues POST /api/v1/recommendations with an empty JSON body and bearer auth', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(PROGRAM_PAYLOAD))
+
+      const result = await recoFitnessApi.generateProgram()
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/recommendations',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer jwt-test-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({}),
+        }),
+      )
+      expect(result).toEqual(PROGRAM_PAYLOAD)
+    })
+
+    it('throws ApiError with status 429 and retryAfter when the user hits the rate limit', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Too Many Requests', {
+          status: 429,
+          headers: { 'Retry-After': '20' },
+        }),
+      )
+
+      await expect(recoFitnessApi.generateProgram()).rejects.toMatchObject({
+        status: 429,
+        retryAfter: 20,
+      })
+    })
+
+    it('throws ApiError with status 409 when the catalog cannot produce any program', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('No exercise passes filters', { status: 409 }))
+
+      await expect(recoFitnessApi.generateProgram()).rejects.toMatchObject({
+        status: 409,
+      })
+    })
+  })
+
   describe('updateFitnessProfile', () => {
     it('issues PUT /api/v1/fitness-profile/me with the body serialised as JSON', async () => {
       const body = {

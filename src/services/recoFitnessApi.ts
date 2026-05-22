@@ -35,6 +35,28 @@ export interface FitnessProfileUpdate {
   preferences: SessionPreferences
 }
 
+export type ScoringStrategy = 'rule_based' | 'hybrid_rank_fusion'
+export type EntitlementTier = 'free' | 'premium' | 'premium_plus'
+
+export interface ExerciseInProgram {
+  id: number
+  name: string
+  target_muscles: string[]
+  equipment: string[]
+  difficulty: string
+  category: string | null
+}
+
+export interface WorkoutProgram {
+  program_id: string
+  user_id: string
+  duration_weeks: number
+  scoring_strategy: ScoringStrategy
+  tier_at_generation: EntitlementTier
+  weeks: ExerciseInProgram[][][]
+  created_at: string
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
@@ -62,6 +84,15 @@ export const recoFitnessApi = {
       body: JSON.stringify(payload),
     })
     return parseJsonOrThrow<FitnessProfile>(response)
+  },
+
+  async generateProgram(): Promise<WorkoutProgram> {
+    const response = await fetch(`${RECO_FITNESS_BASE_URL}/api/v1/recommendations`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({}),
+    })
+    return parseJsonOrThrow<WorkoutProgram>(response)
   },
 }
 
