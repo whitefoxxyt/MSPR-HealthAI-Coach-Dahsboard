@@ -6,6 +6,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthView from '@/views/AuthView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import DataCleaningView from '@/views/DataCleaningView.vue'
+import FitnessProgramView from '@/views/FitnessProgramView.vue'
 import HomeView from '@/views/HomeView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ValidationView from '@/views/ValidationView.vue'
@@ -76,6 +77,12 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
       meta: { requireAuth: true, title: 'Paramètres — VITAL' },
+    },
+    {
+      path: '/fitness-program',
+      name: 'fitness-program',
+      component: FitnessProgramView,
+      meta: { requireAuth: true, title: 'Programme fitness — VITAL' },
     },
 
     // 404 → login
