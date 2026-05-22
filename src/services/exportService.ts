@@ -294,7 +294,9 @@ export function buildAnalysisPdfHtml(
 function openPrintWindow(html: string, fallbackTitle: string): void {
   const win = window.open('', '_blank')
   if (!win) {
-    console.warn(`Impossible d'ouvrir la fenêtre d'impression (${fallbackTitle}).`)
+    window.alert(
+      `Impossible d'ouvrir la fenêtre d'impression (${fallbackTitle}). Autorise les fenêtres pop-up pour ce site puis réessaye.`,
+    )
     return
   }
   win.document.open()
