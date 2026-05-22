@@ -33,14 +33,14 @@
 
     <!-- Action bar -->
     <nav class="action-bar" aria-label="Actions principales">
-      <RouterLink to="/data-cleaning" class="action-btn action-btn--warn">
+      <RouterLink to="/admin/data-cleaning" class="action-btn action-btn--warn">
         <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" aria-hidden="true" />
         <span>Nettoyage interactif</span>
         <span v-if="pendingAnomaliesCount > 0" class="action-badge" aria-label="{{ pendingAnomaliesCount }} anomalies en attente">
           {{ pendingAnomaliesCount }}
         </span>
       </RouterLink>
-      <RouterLink to="/validation" class="action-btn action-btn--info">
+      <RouterLink to="/admin/validation" class="action-btn action-btn--info">
         <font-awesome-icon :icon="['fas', 'shield-check']" aria-hidden="true" />
         <span>Workflow de validation</span>
         <span v-if="pendingRecordsCount > 0" class="action-badge" aria-label="{{ pendingRecordsCount }} enregistrements en attente">
