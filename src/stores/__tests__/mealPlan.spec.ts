@@ -188,8 +188,8 @@ describe('useMealPlanStore', () => {
 
   it('captures a timeout error when fetch is aborted', async () => {
     fetchSpy.mockImplementationOnce(
-      (_url, init) =>
-        new Promise((_resolve, reject) => {
+      (_url: unknown, init: unknown) =>
+        new Promise<Response>((_resolve, reject) => {
           const signal = (init as RequestInit | undefined)?.signal
           signal?.addEventListener('abort', () => {
             const err = new Error('aborted')

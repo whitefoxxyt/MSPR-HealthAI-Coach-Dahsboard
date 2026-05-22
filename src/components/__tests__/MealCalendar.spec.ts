@@ -35,12 +35,12 @@ describe('MealCalendar', () => {
 
     const panels = wrapper.findAll('[data-testid="meal-day"]')
     expect(panels).toHaveLength(2)
-    expect(panels[0].text()).toMatch(/jour\s*1/i)
-    expect(panels[1].text()).toMatch(/jour\s*2/i)
+    expect(panels[0]!.text()).toMatch(/jour\s*1/i)
+    expect(panels[1]!.text()).toMatch(/jour\s*2/i)
   })
 
   it('renders the three meal slots (breakfast, lunch, dinner) per day', () => {
-    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]] } })
+    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]!] } })
 
     const text = wrapper.text().toLowerCase()
     expect(text).toContain('petit-déjeuner')
@@ -49,7 +49,7 @@ describe('MealCalendar', () => {
   })
 
   it('shows each meal name', () => {
-    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]] } })
+    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]!] } })
 
     const text = wrapper.text()
     expect(text).toContain('Porridge banane')
@@ -58,7 +58,7 @@ describe('MealCalendar', () => {
   })
 
   it('shows macros (calories, protein, carbs, fat) for each meal', () => {
-    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]] } })
+    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]!] } })
 
     const breakfast = wrapper.find('[data-testid="meal-breakfast"]')
     expect(breakfast.text()).toContain('420')
@@ -68,7 +68,7 @@ describe('MealCalendar', () => {
   })
 
   it('lists the ingredients per meal', () => {
-    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]] } })
+    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]!] } })
 
     const breakfast = wrapper.find('[data-testid="meal-breakfast"]')
     expect(breakfast.text()).toContain('ingrédient A')
@@ -76,7 +76,7 @@ describe('MealCalendar', () => {
   })
 
   it('shows the budget and prep time per meal', () => {
-    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]] } })
+    const wrapper = mount(MealCalendar, { props: { days: [SAMPLE_DAYS[0]!] } })
 
     const lunch = wrapper.find('[data-testid="meal-lunch"]')
     expect(lunch.text()).toContain('4.5')
