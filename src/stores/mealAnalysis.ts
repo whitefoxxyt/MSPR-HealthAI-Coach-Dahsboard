@@ -3,9 +3,12 @@ import { ref } from 'vue'
 import { ApiError } from '@/services/apiError'
 import {
   mealAnalysisApi,
+  type MealAnalysisHistoryItem,
   type MealAnalysisResult,
   type MealType,
 } from '@/services/aiNutritionApi'
+
+const HISTORY_CACHE_TTL_MS = 30_000
 
 function toApiError(e: unknown): ApiError {
   if (e instanceof ApiError) return e
@@ -19,6 +22,12 @@ export const useMealAnalysisStore = defineStore('mealAnalysis', () => {
   const error = ref<ApiError | null>(null)
   const lastSubmittedFile = ref<File | null>(null)
   const retryAfter = ref<number | null>(null)
+
+  const history = ref<MealAnalysisHistoryItem[]>([])
+  const historyTotal = ref(0)
+  const historyLoading = ref(false)
+  const historyError = ref<ApiError | null>(null)
+  const historyLoadedAt = ref<number | null>(null)
 
   async function submitMeal(file: File, mealType?: MealType | string): Promise<void> {
     loading.value = true
@@ -38,6 +47,34 @@ export const useMealAnalysisStore = defineStore('mealAnalysis', () => {
     }
   }
 
+  async function loadHistory(limit: number, offset: number): Promise<void> {
+    const isInitialPage = offset === 0
+    if (
+      isInitialPage &&
+      historyLoadedAt.value !== null &&
+      Date.now() - historyLoadedAt.value < HISTORY_CACHE_TTL_MS
+    ) {
+      return
+    }
+
+    historyLoading.value = true
+    historyError.value = null
+    try {
+      const response = await mealAnalysisApi.listMealAnalyses(limit, offset)
+      if (isInitialPage) {
+        history.value = response.items
+        historyLoadedAt.value = Date.now()
+      } else {
+        history.value = [...history.value, ...response.items]
+      }
+      historyTotal.value = response.total
+    } catch (e) {
+      historyError.value = toApiError(e)
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
   function reset(): void {
     analysis.value = null
     error.value = null
@@ -51,7 +88,12 @@ export const useMealAnalysisStore = defineStore('mealAnalysis', () => {
     error,
     lastSubmittedFile,
     retryAfter,
+    history,
+    historyTotal,
+    historyLoading,
+    historyError,
     submitMeal,
+    loadHistory,
     reset,
   }
 })

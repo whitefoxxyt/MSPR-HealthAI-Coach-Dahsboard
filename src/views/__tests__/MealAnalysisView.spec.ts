@@ -52,6 +52,7 @@ function createTestRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/meal-analysis', component: MealAnalysisView },
+      { path: '/meal-analyses', name: 'meal-analyses', component: { template: '<div />' } },
       { path: '/', component: { template: '<div />' } },
     ],
   })
@@ -280,7 +281,7 @@ describe('MealAnalysisView', () => {
     wrapper.unmount()
   })
 
-  it('exposes a disabled history placeholder after a successful analysis', async () => {
+  it('exposes a real link to the history view after a successful analysis', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
 
@@ -290,7 +291,8 @@ describe('MealAnalysisView', () => {
 
     const historyLink = wrapper.find('[data-testid="history-link"]')
     expect(historyLink.exists()).toBe(true)
-    expect(historyLink.attributes('aria-disabled')).toBe('true')
+    expect(historyLink.attributes('aria-disabled')).toBeUndefined()
+    expect(historyLink.attributes('href')).toContain('/meal-analyses')
     wrapper.unmount()
   })
 })

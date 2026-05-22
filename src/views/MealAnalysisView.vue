@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AIInsightCard from '@/components/ui/AIInsightCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -202,12 +203,11 @@ onBeforeUnmount(() => {
             size="md"
             @click="onReset"
           >Nouvelle analyse</AppButton>
-          <span
+          <RouterLink
             data-testid="history-link"
-            class="history-link history-link--disabled"
-            aria-disabled="true"
-            title="Historique disponible dans une prochaine étape"
-          >Historique · bientôt</span>
+            class="history-link"
+            to="/meal-analyses"
+          >Historique</RouterLink>
         </div>
       </div>
 
@@ -453,16 +453,6 @@ onBeforeUnmount(() => {
 .history-link:focus-visible {
   outline: 2px solid var(--c-acid-dark);
   outline-offset: 3px;
-}
-
-.history-link--disabled {
-  background: var(--c-cream-2);
-  color: var(--c-gray-600);
-  cursor: not-allowed;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
 }
 
 @media (max-width: 1024px) {

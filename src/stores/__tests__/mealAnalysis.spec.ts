@@ -160,4 +160,173 @@ describe('useMealAnalysisStore', () => {
     const body = init.body as FormData
     expect(body.get('meal_type')).toBe('dinner')
   })
+
+  describe('history', () => {
+    function historyItem(id: string, overrides: Partial<Record<string, unknown>> = {}) {
+      return {
+        id,
+        created_at: '2026-05-20T12:00:00Z',
+        meal_type: 'lunch',
+        image_url: `http://files.local/${id}.png`,
+        detected_foods: [{ name: 'Riz', confidence: 0.8 }],
+        macros: { calories: 500, protein_g: 25, carbs_g: 60, fat_g: 15, fiber_g: 4 },
+        insight: `Insight ${id}`,
+        llm_backend_used: 'mistral',
+        ...overrides,
+      }
+    }
+
+    function historyPage(items: ReturnType<typeof historyItem>[], total: number, limit: number, offset: number) {
+      return { items, total, limit, offset }
+    }
+
+    it('initialises with empty history state', () => {
+      const store = useMealAnalysisStore()
+
+      expect(store.history).toEqual([])
+      expect(store.historyTotal).toBe(0)
+      expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBeNull()
+    })
+
+    it('loadHistory(10, 0) populates history and total on success', async () => {
+      const payload = historyPage([historyItem('a'), historyItem('b')], 5, 10, 0)
+      fetchSpy.mockResolvedValueOnce(jsonResponse(payload))
+      const store = useMealAnalysisStore()
+
+      await store.loadHistory(10, 0)
+
+      expect(store.history).toHaveLength(2)
+      expect(store.history[0]?.id).toBe('a')
+      expect(store.historyTotal).toBe(5)
+      expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBeNull()
+    })
+
+    it('loadHistory(10, 0) replaces previous items', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('old')], 1, 10, 0)),
+      )
+      const store = useMealAnalysisStore()
+      await store.loadHistory(10, 0)
+
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('new')], 1, 10, 0)),
+      )
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      vi.advanceTimersByTime(31_000)
+      await store.loadHistory(10, 0)
+      vi.useRealTimers()
+
+      expect(store.history).toHaveLength(1)
+      expect(store.history[0]?.id).toBe('new')
+    })
+
+    it('loadHistory with offset > 0 appends items for pagination', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('a'), historyItem('b')], 4, 2, 0)),
+      )
+      const store = useMealAnalysisStore()
+      await store.loadHistory(2, 0)
+
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('c'), historyItem('d')], 4, 2, 2)),
+      )
+      await store.loadHistory(2, 2)
+
+      expect(store.history.map((i) => i.id)).toEqual(['a', 'b', 'c', 'd'])
+      expect(store.historyTotal).toBe(4)
+    })
+
+    it('loadHistory(limit, 0) reuses the cache within 30s and skips the network', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('a')], 1, 10, 0)),
+      )
+      const store = useMealAnalysisStore()
+      await store.loadHistory(10, 0)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      await store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(store.history).toHaveLength(1)
+    })
+
+    it('loadHistory(limit, 0) refetches after the 30s TTL expires', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('a')], 1, 10, 0)),
+      )
+      const store = useMealAnalysisStore()
+      await store.loadHistory(10, 0)
+
+      vi.advanceTimersByTime(31_000)
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('b')], 1, 10, 0)),
+      )
+      await store.loadHistory(10, 0)
+      vi.useRealTimers()
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(store.history[0]?.id).toBe('b')
+    })
+
+    it('loadHistory with offset > 0 always hits the network (bypasses cache)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('a')], 4, 1, 0)),
+      )
+      const store = useMealAnalysisStore()
+      await store.loadHistory(1, 0)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('b')], 4, 1, 1)),
+      )
+      await store.loadHistory(1, 1)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('loadHistory captures ApiError on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 503 }))
+      const store = useMealAnalysisStore()
+
+      await store.loadHistory(10, 0)
+
+      expect(store.historyError).not.toBeNull()
+      expect(store.historyError?.status).toBe(503)
+      expect(store.historyLoading).toBe(false)
+    })
+
+    it('loadHistory clears the previous error on retry', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 500 }))
+      const store = useMealAnalysisStore()
+      await store.loadHistory(10, 0)
+      expect(store.historyError?.status).toBe(500)
+
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPage([historyItem('a')], 1, 10, 0)),
+      )
+      await store.loadHistory(10, 0)
+
+      expect(store.historyError).toBeNull()
+      expect(store.history).toHaveLength(1)
+    })
+
+    it('loadHistory sets historyLoading=true during the request', async () => {
+      let resolveFetch: (response: Response) => void = () => {}
+      fetchSpy.mockImplementationOnce(
+        () => new Promise<Response>((resolve) => { resolveFetch = resolve }),
+      )
+      const store = useMealAnalysisStore()
+
+      const pending = store.loadHistory(10, 0)
+      expect(store.historyLoading).toBe(true)
+
+      resolveFetch(jsonResponse(historyPage([historyItem('a')], 1, 10, 0)))
+      await pending
+
+      expect(store.historyLoading).toBe(false)
+    })
+  })
 })
