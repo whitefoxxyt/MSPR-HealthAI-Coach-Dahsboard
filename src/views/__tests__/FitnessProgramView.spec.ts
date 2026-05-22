@@ -83,7 +83,10 @@ async function mountView() {
   })
 }
 
-function mockFetchInOrder(spy: ReturnType<typeof vi.spyOn>, responses: Array<() => Response>) {
+function mockFetchInOrder(
+  spy: ReturnType<typeof vi.spyOn>,
+  responses: Array<() => Response | Promise<Response>>,
+) {
   spy.mockImplementation(() => {
     const next = responses.shift()
     if (!next) {
@@ -200,7 +203,7 @@ describe('FitnessProgramView', () => {
     })
     mockFetchInOrder(fetchSpy, [
       () => jsonResponse(FITNESS_PROFILE),
-      () => pending as unknown as Response,
+      () => pending,
     ])
 
     const wrapper = await mountView()

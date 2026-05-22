@@ -15,10 +15,12 @@ import type { HealthGoalFitness } from '@/services/recoFitnessApi'
 const profileStore = useFitnessProfileStore()
 const programStore = useFitnessProgramStore()
 
+const RATE_LIMIT_FALLBACK_SECONDS = 60
+
 const rateLimit = ref<number | null>(null)
 
 const profileReady = computed(() => profileStore.profile !== null)
-const profileLoaded = computed(
+const profileMissing = computed(
   () => profileStore.error === null && !profileStore.loading && !profileReady.value,
 )
 
@@ -38,11 +40,22 @@ const goalTag = computed<string>(() => {
   }
 })
 
+const errorMessage = computed<string>(() => {
+  const status = programStore.error?.status
+  if (status === undefined) return ''
+  if (status >= 500) return 'Service de recommandation indisponible. Réessaye dans un instant.'
+  if (status === 409) {
+    return 'Impossible de générer un programme : aucun exercice ne passe tes filtres (équipement, limitations). Ajuste ton profil.'
+  }
+  if (status === 401) return 'Session expirée. Reconnecte-toi.'
+  return 'Une erreur est survenue.'
+})
+
 watch(
   () => programStore.error,
   (err) => {
-    if (err?.status === 429 && err.retryAfter) {
-      rateLimit.value = err.retryAfter
+    if (err?.status === 429) {
+      rateLimit.value = err.retryAfter ?? RATE_LIMIT_FALLBACK_SECONDS
     }
   },
 )
@@ -61,7 +74,7 @@ onMounted(() => {
   <UserLayout eyebrow="Performance" title="Programme fitness">
     <div class="fitness-program">
       <EmptyState
-        v-if="profileLoaded"
+        v-if="profileMissing"
         data-testid="fitness-profile-missing"
         icon="✦"
         title="Profil fitness incomplet"
@@ -90,13 +103,7 @@ onMounted(() => {
           class="error-banner"
         >
           <strong>Erreur</strong>
-          {{ programStore.error.status >= 500
-            ? 'Service de recommandation indisponible. Réessaye dans un instant.'
-            : programStore.error.status === 409
-              ? 'Impossible de générer un programme : aucun exercice ne passe tes filtres (équipement, limitations). Ajuste ton profil.'
-              : programStore.error.status === 401
-                ? 'Session expirée. Reconnecte-toi.'
-                : 'Une erreur est survenue.' }}
+          {{ errorMessage }}
         </p>
 
         <div v-if="programStore.loading" data-testid="program-skeleton" class="skeleton">
@@ -143,22 +150,22 @@ onMounted(() => {
             >
               Nouveau programme
             </AppButton>
-            <RouterLink
-              to="/fitness-program"
+            <span
               data-testid="program-history-link"
               class="program-link program-link--disabled"
               aria-disabled="true"
+              role="link"
             >
               Historique <span class="program-link__hint">(bientôt)</span>
-            </RouterLink>
-            <RouterLink
-              to="/fitness-program"
+            </span>
+            <span
               data-testid="program-feedback-link"
               class="program-link program-link--disabled"
               aria-disabled="true"
+              role="link"
             >
               Feedback <span class="program-link__hint">(bientôt)</span>
-            </RouterLink>
+            </span>
           </div>
         </template>
 

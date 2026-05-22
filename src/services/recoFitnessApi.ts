@@ -47,13 +47,16 @@ export interface ExerciseInProgram {
   category: string | null
 }
 
+export type ProgramSession = ExerciseInProgram[]
+export type ProgramWeek = ProgramSession[]
+
 export interface WorkoutProgram {
   program_id: string
   user_id: string
   duration_weeks: number
   scoring_strategy: ScoringStrategy
   tier_at_generation: EntitlementTier
-  weeks: ExerciseInProgram[][][]
+  weeks: ProgramWeek[]
   created_at: string
 }
 
