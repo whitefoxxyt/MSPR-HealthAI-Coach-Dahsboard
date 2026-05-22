@@ -48,5 +48,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_AUTH_BASE_URL=${{ vars.VITE_AUTH_BASE_URL || 'http://localhost:3000' }}
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8080/api' }}
+            VITE_AI_NUTRITION_BASE_URL=${{ vars.VITE_AI_NUTRITION_BASE_URL || 'http://localhost:8001' }}
+            VITE_RECO_FITNESS_BASE_URL=${{ vars.VITE_RECO_FITNESS_BASE_URL || 'http://localhost:8002' }}
+            VITE_ADMIN_EMAILS=${{ vars.VITE_ADMIN_EMAILS || 'admin@healthai.local' }}
+            VITE_USE_MOCK=false
           cache-from: type=gha
           cache-to: type=gha,mode=max

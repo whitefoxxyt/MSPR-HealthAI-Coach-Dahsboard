@@ -15,12 +15,10 @@
     </figure>
 
     <figure class="chart-card chart-card--wide">
-      <div class="chart-card__header">
-        <figcaption class="chart-card__title">Taux de progression</figcaption>
-        <div class="chart-card__meta">
-          <span class="big-rate">{{ formatPercentage(progressionRate) }}</span>
-          <span class="period-note">{{ periodLabel }}</span>
-        </div>
+      <figcaption class="chart-card__title">Taux de progression</figcaption>
+      <div class="chart-card__meta">
+        <span class="big-rate">{{ formatPercentage(progressionRate) }}</span>
+        <span class="period-note">{{ periodLabel }}</span>
       </div>
       <div class="chart-wrap chart-wrap--short">
         <canvas ref="trendCanvas" role="img" :aria-label="`Courbe de tendance de progression sur ${periodLabel}`" />
@@ -171,15 +169,13 @@ onBeforeUnmount(() => { ageChart?.destroy(); objectiveChart?.destroy(); trendCha
   box-shadow: var(--shadow-sm);
 }
 
-.chart-card--wide { grid-column: 1 / -1; }
-
-.chart-card__header {
-  display: flex;
+.chart-card--wide {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 1rem;
+  row-gap: 1rem;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
 
 .chart-card__title {
@@ -192,7 +188,19 @@ onBeforeUnmount(() => { ageChart?.destroy(); objectiveChart?.destroy(); trendCha
   letter-spacing: 0.05em;
 }
 
-.chart-card--wide .chart-card__title { margin: 0; }
+.chart-card--wide .chart-card__title {
+  margin: 0;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.chart-card--wide .chart-card__meta {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.chart-card--wide .chart-wrap { grid-column: 1 / -1; }
 
 .chart-card__meta {
   display: flex;
