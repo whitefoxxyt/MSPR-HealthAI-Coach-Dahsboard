@@ -2,6 +2,7 @@ import { authSessionManager } from '@/services/auth'
 import { ApiError, parseJsonOrThrow } from '@/services/apiError'
 
 const AI_NUTRITION_BASE_URL = import.meta.env.VITE_AI_NUTRITION_BASE_URL || 'http://localhost:8001'
+const PREFERENCES_PATH = '/api/v1/me/preferences'
 
 export type LLMBackend = 'mistral' | 'ollama'
 
@@ -59,14 +60,14 @@ function authHeaders(): Record<string, string> {
 
 export const llmPreferencesApi = {
   getPreferences(): Promise<LLMPreferencesView> {
-    return fetch(`${AI_NUTRITION_BASE_URL}/me/preferences`, {
+    return fetch(`${AI_NUTRITION_BASE_URL}${PREFERENCES_PATH}`, {
       method: 'GET',
       headers: authHeaders(),
     }).then((r) => parseJsonOrThrow<LLMPreferencesView>(r))
   },
 
   updatePreferences(preferred: LLMBackend | null): Promise<LLMPreferencesView> {
-    return fetch(`${AI_NUTRITION_BASE_URL}/me/preferences`, {
+    return fetch(`${AI_NUTRITION_BASE_URL}${PREFERENCES_PATH}`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ preferred_llm: preferred }),

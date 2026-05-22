@@ -28,9 +28,6 @@
       </div>
     </header>
 
-    <!-- LLM backend selector (admin override) -->
-    <LLMSelector class="db-llm-selector" />
-
     <!-- Action bar -->
     <nav class="action-bar" aria-label="Actions principales">
       <RouterLink to="/admin/data-cleaning" class="action-btn action-btn--warn">
@@ -150,7 +147,6 @@ import DataQualitySection from '@/components/dashboard/DataQualitySection.vue'
 import UserProgressionSection from '@/components/dashboard/UserProgressionSection.vue'
 import NutritionActivitySection from '@/components/dashboard/NutritionActivitySection.vue'
 import BusinessKpisSection from '@/components/dashboard/BusinessKpisSection.vue'
-import LLMSelector from '@/components/LLMSelector.vue'
 
 const dataQualityStore = useDataQualityStore()
 const validationStore = useValidationStore()
@@ -303,11 +299,6 @@ onBeforeUnmount(() => {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinning { animation: spin 0.8s linear infinite; }
-
-/* ── LLM selector ── */
-.db-llm-selector {
-  margin-bottom: 1.5rem;
-}
 
 /* ── Action bar ── */
 .action-bar {
