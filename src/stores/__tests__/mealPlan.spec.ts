@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useMealPlanStore, MEAL_PLAN_TIMEOUTS_MS } from '../mealPlan'
 import { useLLMPreferencesStore } from '../llmPreferences'
+import { ApiError } from '@/services/apiError'
 
 const AUTH_STORAGE_KEY = 'healthai.auth.session'
 
@@ -373,6 +374,46 @@ describe('useMealPlanStore', () => {
 
       await promise
       expect(store.historyLoading).toBe(false)
+    })
+
+    it('clears historyError when a subsequent call hits the cache', async () => {
+      // First call seeds the cache for (10, 0).
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a')], 1, 10, 0)),
+      )
+      const store = useMealPlanStore()
+      await store.loadHistory(10, 0)
+
+      // Simulate a stale error left over from a prior failed call (e.g. on a different offset).
+      store.historyError = new ApiError('stale', 503)
+
+      // Second call within TTL with same params → cache hit, must clear stale error.
+      await store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(store.historyError).toBeNull()
+    })
+
+    it('does not fire a second fetch while one is already in flight', async () => {
+      let resolveFirst: (response: Response) => void = () => {}
+      fetchSpy.mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
+      const store = useMealPlanStore()
+
+      const first = store.loadHistory(10, 0)
+      const second = store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      resolveFirst(jsonResponse(listResponse([summary('a')], 1, 10, 0)))
+      await Promise.all([first, second])
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(store.history.map((p) => p.id)).toEqual(['a'])
     })
   })
 })

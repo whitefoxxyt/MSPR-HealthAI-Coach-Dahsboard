@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -32,12 +32,25 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
 
 const store = useMealPlanStore()
 const selectedPlan = ref<MealPlanSummary | null>(null)
+const detailPanelRef = ref<HTMLElement | null>(null)
 
 const hasMore = computed(() => store.history.length < store.historyTotal)
 
 const isEmpty = computed(
-  () => !store.historyLoading && store.history.length === 0 && store.historyTotal === 0,
+  () =>
+    !store.historyLoading &&
+    store.historyError === null &&
+    store.history.length === 0 &&
+    store.historyTotal === 0,
 )
+
+const errorMessage = computed<string>(() => {
+  const err = store.historyError
+  if (!err) return ''
+  if (err.status === 429) return 'Trop de requêtes. Patiente quelques instants avant de réessayer.'
+  if (err.status >= 500) return 'Service nutrition indisponible. Réessaye dans un instant.'
+  return 'Impossible de charger l’historique des plans repas.'
+})
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -71,6 +84,16 @@ async function loadMore() {
   await store.loadHistory(PAGE_SIZE, store.history.length)
 }
 
+async function retry() {
+  await store.loadHistory(PAGE_SIZE, 0)
+}
+
+watch(selectedPlan, async (next) => {
+  if (!next) return
+  await nextTick()
+  detailPanelRef.value?.focus()
+})
+
 onMounted(() => {
   void store.loadHistory(PAGE_SIZE, 0)
 })
@@ -79,6 +102,23 @@ onMounted(() => {
 <template>
   <UserLayout eyebrow="IA · Nutrition" title="Historique plans repas">
     <div class="history">
+      <div
+        v-if="store.historyError"
+        role="alert"
+        data-testid="meal-plan-history-error"
+        class="history__error"
+      >
+        <p class="history__error-message">{{ errorMessage }}</p>
+        <AppButton
+          variant="outline"
+          data-testid="meal-plan-history-retry"
+          :loading="store.historyLoading"
+          @click="retry"
+        >
+          Réessayer
+        </AppButton>
+      </div>
+
       <EmptyState
         v-if="isEmpty"
         data-testid="meal-plan-history-empty"
@@ -93,7 +133,7 @@ onMounted(() => {
         </template>
       </EmptyState>
 
-      <template v-else>
+      <template v-else-if="store.history.length > 0">
         <p
           v-if="store.historyTotal > 0"
           data-testid="meal-plan-history-counter"
@@ -147,12 +187,18 @@ onMounted(() => {
       <section
         v-if="selectedPlan"
         class="history__detail"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="history-detail-title"
         data-testid="meal-plan-history-detail"
+        @click.self="closeDetail"
       >
-        <div class="history__detail-panel">
+        <div
+          ref="detailPanelRef"
+          class="history__detail-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="history-detail-title"
+          tabindex="-1"
+          @keydown.esc.stop="closeDetail"
+        >
           <header class="history__detail-head">
             <div>
               <p class="history__detail-eyebrow">{{ formatDate(selectedPlan.created_at) }}</p>
@@ -220,6 +266,25 @@ onMounted(() => {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--c-gray-600);
+}
+
+.history__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: var(--r-md);
+  color: var(--c-onyx);
+}
+
+.history__error-message {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--c-onyx);
 }
 
 .history__grid {
@@ -358,6 +423,11 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--sp-md);
   box-shadow: 0 24px 64px rgba(20, 20, 20, 0.30);
+  outline: none;
+}
+
+.history__detail-panel:focus-visible {
+  box-shadow: 0 0 0 3px var(--c-acid-dark), 0 24px 64px rgba(20, 20, 20, 0.30);
 }
 
 .history__detail-head {

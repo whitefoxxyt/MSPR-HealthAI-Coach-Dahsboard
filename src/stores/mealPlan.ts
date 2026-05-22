@@ -78,6 +78,8 @@ export const useMealPlanStore = defineStore('mealPlan', () => {
   }
 
   async function loadHistory(limit: number, offset: number): Promise<void> {
+    if (historyLoading.value) return
+
     const last = historyLastParams.value
     const cachedAt = historyCachedAt.value
     const isCacheHit =
@@ -86,7 +88,10 @@ export const useMealPlanStore = defineStore('mealPlan', () => {
       last.limit === limit &&
       last.offset === offset &&
       Date.now() - cachedAt < MEAL_PLAN_HISTORY_CACHE_TTL_MS
-    if (isCacheHit) return
+    if (isCacheHit) {
+      historyError.value = null
+      return
+    }
 
     historyLoading.value = true
     historyError.value = null

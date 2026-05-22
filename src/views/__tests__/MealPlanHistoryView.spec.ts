@@ -259,6 +259,44 @@ describe('MealPlanHistoryView', () => {
     })
   })
 
+  describe('error state', () => {
+    it('renders an error banner instead of EmptyState when the initial fetch fails', async () => {
+      mockFetchInOrder(fetchSpy, [() => new Response('Server Error', { status: 503 })])
+
+      const wrapper = await mountView()
+      await flushPromises()
+
+      const error = wrapper.find('[data-testid="meal-plan-history-error"]')
+      expect(error.exists()).toBe(true)
+      expect(error.attributes('role')).toBe('alert')
+      expect(error.text().toLowerCase()).toMatch(/indisponible|impossible/)
+
+      expect(wrapper.find('[data-testid="meal-plan-history-empty"]').exists()).toBe(false)
+    })
+
+    it('retries the fetch when the user clicks "Réessayer"', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => new Response('Server Error', { status: 503 }),
+        () => jsonResponse(listResponse([summary({ id: 'plan-a' })], 1)),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+
+      // Advance time past TTL so retry is not a cache hit.
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.now() + 31_000)
+
+      await wrapper.find('[data-testid="meal-plan-history-retry"]').trigger('click')
+      await flushPromises()
+      vi.useRealTimers()
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(wrapper.find('[data-testid="meal-plan-history-error"]').exists()).toBe(false)
+      expect(wrapper.findAll('[data-testid="meal-plan-history-card"]')).toHaveLength(1)
+    })
+  })
+
   describe('detail view', () => {
     it('clicking a card opens the detail view with MealCalendar rendered inside', async () => {
       mockFetchInOrder(fetchSpy, [
@@ -292,6 +330,62 @@ describe('MealPlanHistoryView', () => {
       expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(true)
 
       await wrapper.find('[data-testid="meal-plan-history-detail-close"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(false)
+    })
+
+    it('detail view closes when the user clicks the backdrop', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(listResponse([summary({ id: 'plan-a' })], 1)),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+
+      await wrapper.find('[data-testid="meal-plan-history-card"]').trigger('click')
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(true)
+
+      // click.self on the backdrop only fires when the click target is the backdrop itself.
+      await wrapper.find('[data-testid="meal-plan-history-detail"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(false)
+    })
+
+    it('clicking inside the panel does not close the detail view', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(listResponse([summary({ id: 'plan-a' })], 1)),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+
+      await wrapper.find('[data-testid="meal-plan-history-card"]').trigger('click')
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(true)
+
+      // Clicking on the inner calendar must bubble but click.self must NOT close.
+      await wrapper.find('[data-testid="meal-calendar-grid"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(true)
+    })
+
+    it('detail view closes when the user presses Escape inside the dialog', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(listResponse([summary({ id: 'plan-a' })], 1)),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+
+      await wrapper.find('[data-testid="meal-plan-history-card"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(true)
+
+      const panel = wrapper.find('[role="dialog"]')
+      expect(panel.exists()).toBe(true)
+      await panel.trigger('keydown', { key: 'Escape' })
       await flushPromises()
 
       expect(wrapper.find('[data-testid="meal-plan-history-detail"]').exists()).toBe(false)
