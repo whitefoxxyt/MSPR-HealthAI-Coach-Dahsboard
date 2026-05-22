@@ -58,7 +58,7 @@ describe('LLMSelector', () => {
     expect((mistralRadio.element as HTMLInputElement).checked).toBe(true)
     expect((ollamaRadio.element as HTMLInputElement).checked).toBe(false)
     expect(fetchSpy).toHaveBeenCalledWith(
-      'http://localhost:8001/me/preferences',
+      'http://localhost:8001/api/v1/me/preferences',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
@@ -79,7 +79,7 @@ describe('LLMSelector', () => {
     await flushPromises()
 
     expect(fetchSpy).toHaveBeenLastCalledWith(
-      'http://localhost:8001/me/preferences',
+      'http://localhost:8001/api/v1/me/preferences',
       expect.objectContaining({
         method: 'PATCH',
         headers: expect.objectContaining({

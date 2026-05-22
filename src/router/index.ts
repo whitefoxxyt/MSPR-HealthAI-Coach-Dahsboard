@@ -8,6 +8,7 @@ import DashboardView from '@/views/DashboardView.vue'
 import DataCleaningView from '@/views/DataCleaningView.vue'
 import HomeView from '@/views/HomeView.vue'
 import ValidationView from '@/views/ValidationView.vue'
+import SettingsView from '@/views/user/SettingsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,12 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
       meta: { requireAuth: true, title: 'VITAL — Accueil' },
+    },
+    {
+      path: '/parametres',
+      name: 'settings',
+      component: SettingsView,
+      meta: { requireAuth: true, title: 'Paramètres — VITAL' },
     },
 
     // 404 → login
