@@ -170,4 +170,33 @@ describe('FitnessProgramDetailView', () => {
 
     expect(wrapper.find('[data-testid="detail-loading"]').exists()).toBe(false)
   })
+
+  it('shows an error banner when the backend returns 5xx (instead of a misleading "introuvable")', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 503 }))
+
+    const { wrapper } = await mountView('prog-xyz')
+    await flushPromises()
+
+    const banner = wrapper.find('[data-testid="detail-error"]')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toMatch(/indisponible|erreur/i)
+    expect(wrapper.find('[data-testid="program-not-found"]').exists()).toBe(false)
+  })
+
+  it('shows the rate-limit banner with retry-after on 429', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '21' },
+      }),
+    )
+
+    const { wrapper } = await mountView('prog-xyz')
+    await flushPromises()
+
+    const banner = wrapper.find('[data-testid="detail-rate-limit"]')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toContain('21')
+    expect(wrapper.find('[data-testid="program-not-found"]').exists()).toBe(false)
+  })
 })

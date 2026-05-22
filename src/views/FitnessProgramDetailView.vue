@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import ProgramSummary from '@/components/ProgramSummary.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useFitnessProgramStore } from '@/stores/fitnessProgram'
 import { fitnessGoalTag } from '@/utils/fitnessGoals'
 
 const DETAIL_LOOKUP_LIMIT = 50
+const RATE_LIMIT_FALLBACK_SECONDS = 60
 
 const route = useRoute()
 const programStore = useFitnessProgramStore()
+const rateLimit = ref<number | null>(null)
 
 const programId = computed(() => String(route.params.id ?? ''))
 
@@ -27,7 +30,27 @@ const isLoading = computed(
   () => programStore.historyLoading && program.value === null,
 )
 const isNotFound = computed(
-  () => !programStore.historyLoading && program.value === null,
+  () =>
+    !programStore.historyLoading
+    && program.value === null
+    && programStore.historyError === null,
+)
+
+const errorMessage = computed<string>(() => {
+  const status = programStore.historyError?.status
+  if (status === undefined) return ''
+  if (status >= 500) return 'Service de recommandation indisponible. Réessaie dans un instant.'
+  if (status === 401) return 'Session expirée. Reconnecte-toi.'
+  return 'Une erreur est survenue.'
+})
+
+watch(
+  () => programStore.historyError,
+  (err) => {
+    if (err?.status === 429) {
+      rateLimit.value = err.retryAfter ?? RATE_LIMIT_FALLBACK_SECONDS
+    }
+  },
 )
 
 onMounted(() => {
@@ -38,6 +61,23 @@ onMounted(() => {
 <template>
   <UserLayout eyebrow="Performance" title="Programme">
     <div class="detail">
+      <RateLimitBanner
+        v-if="rateLimit"
+        data-testid="detail-rate-limit"
+        :retry-after="rateLimit"
+        message="Limite atteinte. Réessaie dans"
+        @dismiss="rateLimit = null"
+      />
+      <p
+        v-else-if="programStore.historyError"
+        role="alert"
+        data-testid="detail-error"
+        class="error-banner"
+      >
+        <strong>Erreur</strong>
+        {{ errorMessage }}
+      </p>
+
       <div v-if="isLoading" data-testid="detail-loading" class="loading">
         <LoadingSpinner size="lg" accent="acid" label="Chargement du programme" />
         <p class="loading__text">Chargement du programme…</p>
@@ -101,6 +141,22 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--sp-lg);
   max-width: 920px;
+}
+
+.error-banner {
+  margin: 0;
+  padding: var(--sp-md) var(--sp-lg);
+  background: var(--c-coral, #ffe5dc);
+  color: var(--c-onyx);
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 107, 74, 0.35);
+  font-size: 0.9375rem;
+}
+
+.error-banner strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
 }
 
 .loading {
