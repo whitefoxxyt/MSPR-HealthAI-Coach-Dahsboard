@@ -50,6 +50,42 @@ export interface MeMacrosResponse {
   macros: MacroTargetsView | null
 }
 
+export interface MealMacros {
+  calories: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+}
+
+export interface Meal {
+  name: string
+  macros: MealMacros
+  ingredients: string[]
+  budget_eur: number
+  prep_time_min: number
+}
+
+export interface DayPlan {
+  day: number
+  breakfast: Meal
+  lunch: Meal
+  dinner: Meal
+}
+
+export interface MealPlanResponse {
+  days: DayPlan[]
+  llm_backend_used: LLMBackend
+  total_budget_eur: number
+}
+
+export interface MealPlanRequest {
+  health_goal?: HealthGoal | null
+  diet_type: DietType
+  duration_days: number
+  allergies: string[]
+  budget_eur_per_day?: number | null
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
@@ -104,6 +140,25 @@ export const nutritionMacrosApi = {
       headers: authHeaders(),
     })
     return parseJsonOrThrow<MeMacrosResponse>(response)
+  },
+}
+
+export interface GenerateMealPlanOptions {
+  signal?: AbortSignal
+}
+
+export const mealPlanApi = {
+  async generateMealPlan(
+    body: MealPlanRequest,
+    options: GenerateMealPlanOptions = {},
+  ): Promise<MealPlanResponse> {
+    const response = await fetch(`${AI_NUTRITION_BASE_URL}/api/v1/generate-meal-plan`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+      signal: options.signal,
+    })
+    return parseJsonOrThrow<MealPlanResponse>(response)
   },
 }
 
