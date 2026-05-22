@@ -3,11 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import ProgramSummary from '@/components/ProgramSummary.vue'
 import WorkoutCard from '@/components/WorkoutCard.vue'
 import { useFitnessProgramStore } from '@/stores/fitnessProgram'
+import { exportProgramJson, exportProgramPdf } from '@/services/exportService'
 import { fitnessGoalTag } from '@/utils/fitnessGoals'
 
 const DETAIL_LOOKUP_LIMIT = 50
@@ -98,9 +100,16 @@ onMounted(() => {
       </EmptyState>
 
       <template v-else-if="program">
-        <RouterLink to="/fitness-programs" class="breadcrumb" data-testid="back-to-history">
-          ← Historique
-        </RouterLink>
+        <div class="detail-head">
+          <RouterLink to="/fitness-programs" class="breadcrumb" data-testid="back-to-history">
+            ← Historique
+          </RouterLink>
+          <ExportActions
+            aria-label="Exporter le programme"
+            @export-pdf="exportProgramPdf(program)"
+            @export-json="exportProgramJson(program)"
+          />
+        </div>
 
         <ProgramSummary :program="program" :tag="goalTag" />
 
@@ -200,6 +209,14 @@ onMounted(() => {
 .back-link:focus-visible {
   outline: 2px solid var(--c-acid-dark);
   outline-offset: 3px;
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-md);
+  flex-wrap: wrap;
 }
 
 .breadcrumb {

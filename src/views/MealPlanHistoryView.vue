@@ -4,8 +4,10 @@ import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import MealCalendar from '@/components/MealCalendar.vue'
 import { useMealPlanStore } from '@/stores/mealPlan'
+import { exportPlanJson, exportPlanPdf } from '@/services/exportService'
 import type { MealPlanSummary } from '@/services/aiNutritionApi'
 
 const PAGE_SIZE = 10
@@ -227,6 +229,12 @@ onMounted(() => {
               <span class="history__detail-label">Budget total estimé</span>
               <span class="history__detail-value">{{ formatBudget(selectedPlan.total_budget_eur) }} €</span>
             </p>
+            <ExportActions
+              class="history__detail-export"
+              aria-label="Exporter le plan repas"
+              @export-pdf="exportPlanPdf(selectedPlan)"
+              @export-json="exportPlanJson(selectedPlan)"
+            />
           </footer>
         </div>
       </section>

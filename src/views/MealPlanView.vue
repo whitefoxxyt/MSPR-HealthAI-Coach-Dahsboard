@@ -8,10 +8,12 @@ import AppChip from '@/components/ui/AppChip.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import MealCalendar from '@/components/MealCalendar.vue'
 import { useNutritionGoalsStore } from '@/stores/nutritionGoals'
 import { useMealPlanStore } from '@/stores/mealPlan'
+import { exportPlanJson, exportPlanPdf } from '@/services/exportService'
 import type {
   DietType,
   HealthGoal,
@@ -307,6 +309,12 @@ onMounted(() => {
           </p>
 
           <div class="meal-plan__footer-actions">
+            <ExportActions
+              v-if="mealPlanStore.currentPlan"
+              aria-label="Exporter le plan repas"
+              @export-pdf="exportPlanPdf(mealPlanStore.currentPlan)"
+              @export-json="exportPlanJson(mealPlanStore.currentPlan)"
+            />
             <AppButton
               variant="acid"
               data-testid="meal-plan-reset"

@@ -6,10 +6,12 @@ import AIInsightCard from '@/components/ui/AIInsightCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import FileDropzone, { type DropzoneError } from '@/components/ui/FileDropzone.vue'
 import MacrosGrid from '@/components/ui/MacrosGrid.vue'
 import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import { useMealAnalysisStore } from '@/stores/mealAnalysis'
+import { exportAnalysisJson, exportAnalysisPdf } from '@/services/exportService'
 import type { MealType } from '@/services/aiNutritionApi'
 
 const COOLDOWN_SECONDS = 60
@@ -197,6 +199,12 @@ onBeforeUnmount(() => {
           <h2 class="block__title">Voici ce que l'IA a vu.</h2>
         </header>
         <div class="result__actions">
+          <ExportActions
+            v-if="store.analysis"
+            aria-label="Exporter l'analyse"
+            @export-pdf="exportAnalysisPdf(store.analysis)"
+            @export-json="exportAnalysisJson(store.analysis)"
+          />
           <AppButton
             data-testid="reset-button"
             variant="outline"

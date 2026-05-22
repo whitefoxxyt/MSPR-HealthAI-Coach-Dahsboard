@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import ProgramSummary from '@/components/ProgramSummary.vue'
@@ -12,6 +13,7 @@ import FeedbackForm from '@/components/FeedbackForm.vue'
 import { useFitnessProfileStore } from '@/stores/fitnessProfile'
 import { useFitnessProgramStore } from '@/stores/fitnessProgram'
 import { useProgramFeedbackStore } from '@/stores/programFeedback'
+import { exportProgramJson, exportProgramPdf } from '@/services/exportService'
 import type { ProgramFeedbackBody } from '@/services/recoFitnessApi'
 import { fitnessGoalTag } from '@/utils/fitnessGoals'
 
@@ -221,6 +223,12 @@ onMounted(() => {
             >
               Donner un feedback
             </AppButton>
+            <ExportActions
+              v-if="programStore.program"
+              aria-label="Exporter le programme"
+              @export-pdf="exportProgramPdf(programStore.program)"
+              @export-json="exportProgramJson(programStore.program)"
+            />
             <RouterLink
               data-testid="program-history-link"
               to="/fitness-programs"

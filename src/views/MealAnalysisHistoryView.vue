@@ -5,8 +5,10 @@ import UserLayout from '@/layouts/UserLayout.vue'
 import AIInsightCard from '@/components/ui/AIInsightCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ExportActions from '@/components/ui/ExportActions.vue'
 import MacrosGrid from '@/components/ui/MacrosGrid.vue'
 import { useMealAnalysisStore } from '@/stores/mealAnalysis'
+import { exportAnalysisJson, exportAnalysisPdf } from '@/services/exportService'
 import type { MealAnalysisHistoryItem } from '@/services/aiNutritionApi'
 
 const PAGE_SIZE = 10
@@ -265,6 +267,11 @@ onBeforeUnmount(() => {
               <AIInsightCard
                 :text="selected.insight"
                 :backend="selected.llm_backend_used"
+              />
+              <ExportActions
+                aria-label="Exporter l'analyse"
+                @export-pdf="exportAnalysisPdf(selected)"
+                @export-json="exportAnalysisJson(selected)"
               />
             </div>
           </div>
