@@ -56,8 +56,17 @@ export interface WorkoutProgram {
   duration_weeks: number
   scoring_strategy: ScoringStrategy
   tier_at_generation: EntitlementTier
+  health_goal_at_generation: HealthGoalFitness
+  duration_min_per_session: number
   weeks: ProgramWeek[]
   created_at: string
+}
+
+export interface WorkoutProgramListResponse {
+  items: WorkoutProgram[]
+  total: number
+  limit: number
+  offset: number
 }
 
 function authHeaders(): Record<string, string> {
@@ -96,6 +105,15 @@ export const recoFitnessApi = {
       body: JSON.stringify({}),
     })
     return parseJsonOrThrow<WorkoutProgram>(response)
+  },
+
+  async listPrograms(limit: number, offset: number): Promise<WorkoutProgramListResponse> {
+    const url = `${RECO_FITNESS_BASE_URL}/api/v1/programs/me?limit=${limit}&offset=${offset}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: authHeaders(),
+    })
+    return parseJsonOrThrow<WorkoutProgramListResponse>(response)
   },
 }
 

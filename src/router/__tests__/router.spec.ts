@@ -4,6 +4,8 @@ import MealAnalysisView from '@/views/MealAnalysisView.vue'
 import SettingsView from '@/views/user/SettingsView.vue'
 import MealPlanView from '@/views/MealPlanView.vue'
 import FitnessProgramView from '@/views/FitnessProgramView.vue'
+import FitnessProgramHistoryView from '@/views/FitnessProgramHistoryView.vue'
+import FitnessProgramDetailView from '@/views/FitnessProgramDetailView.vue'
 
 describe('router', () => {
   it('expose une route nommée "settings" sur /parametres', () => {
@@ -49,6 +51,37 @@ describe('router', () => {
   it('rend FitnessProgramView sur /fitness-program', () => {
     const route = router.resolve('/fitness-program')
     expect(route.matched.some((r) => r.components?.default === FitnessProgramView)).toBe(true)
+  })
+
+  it('expose une route nommée "fitness-programs" sur /fitness-programs', () => {
+    const route = router.resolve('/fitness-programs')
+    expect(route.name).toBe('fitness-programs')
+  })
+
+  it('protège /fitness-programs par requireAuth', () => {
+    const route = router.resolve('/fitness-programs')
+    expect(route.meta.requireAuth).toBe(true)
+  })
+
+  it('rend FitnessProgramHistoryView sur /fitness-programs', () => {
+    const route = router.resolve('/fitness-programs')
+    expect(route.matched.some((r) => r.components?.default === FitnessProgramHistoryView)).toBe(true)
+  })
+
+  it('expose une route nommée "fitness-program-detail" sur /fitness-programs/:id', () => {
+    const route = router.resolve('/fitness-programs/prog-abc')
+    expect(route.name).toBe('fitness-program-detail')
+    expect(route.params.id).toBe('prog-abc')
+  })
+
+  it('protège /fitness-programs/:id par requireAuth', () => {
+    const route = router.resolve('/fitness-programs/prog-abc')
+    expect(route.meta.requireAuth).toBe(true)
+  })
+
+  it('rend FitnessProgramDetailView sur /fitness-programs/:id', () => {
+    const route = router.resolve('/fitness-programs/prog-abc')
+    expect(route.matched.some((r) => r.components?.default === FitnessProgramDetailView)).toBe(true)
   })
 
   it('expose une route nommée "meal-analysis" sur /meal-analysis', () => {
