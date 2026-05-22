@@ -283,6 +283,61 @@ describe('mealAnalysisApi', () => {
       status: 502,
     })
   })
+
+  describe('listMealAnalyses', () => {
+    const LIST_PAYLOAD = {
+      items: [
+        {
+          id: 'analysis-1',
+          created_at: '2026-05-20T12:34:56Z',
+          meal_type: 'lunch',
+          image_url: 'http://files.local/meal-1.png',
+          detected_foods: [
+            { name: 'Pizza margherita', confidence: 0.92 },
+            { name: 'Salade verte', confidence: 0.68 },
+          ],
+          macros: { calories: 720, protein_g: 28, carbs_g: 82, fat_g: 30, fiber_g: 6 },
+          insight: 'Insight 1',
+          llm_backend_used: 'mistral',
+        },
+      ],
+      total: 12,
+      limit: 10,
+      offset: 0,
+    }
+
+    it('GET /api/v1/meal-analyses/me with bearer auth, limit and offset query params', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(LIST_PAYLOAD))
+
+      const result = await mealAnalysisApi.listMealAnalyses(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8001/api/v1/meal-analyses/me?limit=10&offset=0',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
+        }),
+      )
+      expect(result).toEqual(LIST_PAYLOAD)
+    })
+
+    it('forwards limit and offset as numeric query params (no defaults baked in)', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...LIST_PAYLOAD, limit: 5, offset: 20 }))
+
+      await mealAnalysisApi.listMealAnalyses(5, 20)
+
+      const [calledUrl] = fetchSpy.mock.calls[0] as [string, RequestInit]
+      expect(calledUrl).toBe('http://localhost:8001/api/v1/meal-analyses/me?limit=5&offset=20')
+    })
+
+    it('throws ApiError on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
+
+      await expect(mealAnalysisApi.listMealAnalyses(10, 0)).rejects.toMatchObject({
+        status: 502,
+      })
+    })
+  })
 })
 
 describe('nutritionMacrosApi', () => {
