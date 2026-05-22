@@ -7,6 +7,7 @@ import AuthView from '@/views/AuthView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import DataCleaningView from '@/views/DataCleaningView.vue'
 import HomeView from '@/views/HomeView.vue'
+import ProfileView from '@/views/ProfileView.vue'
 import ValidationView from '@/views/ValidationView.vue'
 import SettingsView from '@/views/user/SettingsView.vue'
 
@@ -63,6 +64,12 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
       meta: { requireAuth: true, title: 'VITAL — Accueil' },
+    },
+    {
+      path: '/profil',
+      name: 'profile',
+      component: ProfileView,
+      meta: { requireAuth: true, title: 'Profil & objectifs — VITAL' },
     },
     {
       path: '/parametres',
