@@ -16,7 +16,7 @@ function mealOf(day: DayPlan, key: 'breakfast' | 'lunch' | 'dinner'): Meal {
 }
 
 function formatBudget(value: number): string {
-  return value.toFixed(2).replace(/\.?0+$/, (s) => (s === '.00' ? '' : s))
+  return value.toFixed(2).replace(/\.?0+$/, '')
 }
 </script>
 

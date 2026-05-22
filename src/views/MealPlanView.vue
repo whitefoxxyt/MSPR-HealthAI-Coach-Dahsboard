@@ -98,6 +98,15 @@ const step = computed<'form' | 'loading' | 'result'>(() => {
   return 'form'
 })
 
+const errorMessage = computed<string>(() => {
+  const err = mealPlanStore.error
+  if (!err) return ''
+  if (err.status >= 500) return 'Service nutrition indisponible. Réessaye dans un instant.'
+  if (err.status === 429) return 'Trop de requêtes. Patiente quelques instants avant de réessayer.'
+  if (err.status === 408) return 'La génération a pris trop de temps. Réessaye.'
+  return 'Impossible de générer le plan repas.'
+})
+
 const profileLoaded = computed(
   () => !nutritionStore.loading || nutritionStore.goals !== null,
 )
@@ -195,11 +204,7 @@ onMounted(() => {
           class="meal-plan__error"
         >
           <strong>Erreur</strong>
-          {{ mealPlanStore.error.status >= 500
-            ? 'Service nutrition indisponible. Réessaye dans un instant.'
-            : mealPlanStore.error.status === 408
-              ? 'La génération a pris trop de temps. Réessaye.'
-              : 'Impossible de générer le plan repas.' }}
+          {{ errorMessage }}
         </p>
 
         <form
@@ -309,13 +314,13 @@ onMounted(() => {
             >
               Nouveau plan
             </AppButton>
-            <a
+            <button
+              type="button"
               data-testid="meal-plan-history-link"
               class="meal-plan__history"
-              href="#historique"
-              aria-disabled="true"
+              disabled
               title="Disponible bientôt (slice S6)"
-            >Historique →</a>
+            >Historique →</button>
           </div>
         </footer>
       </section>
@@ -510,6 +515,9 @@ onMounted(() => {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--c-gray-600);
+  background: none;
+  border: none;
+  padding: 0;
   text-decoration: none;
   cursor: not-allowed;
 }
