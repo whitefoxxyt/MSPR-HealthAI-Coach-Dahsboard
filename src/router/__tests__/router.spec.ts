@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import router from '@/router'
 import MealAnalysisView from '@/views/MealAnalysisView.vue'
 import SettingsView from '@/views/user/SettingsView.vue'
+import MealPlanView from '@/views/MealPlanView.vue'
 import FitnessProgramView from '@/views/FitnessProgramView.vue'
 
 describe('router', () => {
@@ -18,6 +19,21 @@ describe('router', () => {
   it('rend SettingsView sur /parametres', () => {
     const route = router.resolve('/parametres')
     expect(route.matched.some((r) => r.components?.default === SettingsView)).toBe(true)
+  })
+
+  it('expose une route nommée "meal-plan" sur /meal-plan', () => {
+    const route = router.resolve('/meal-plan')
+    expect(route.name).toBe('meal-plan')
+  })
+
+  it('protège /meal-plan par requireAuth', () => {
+    const route = router.resolve('/meal-plan')
+    expect(route.meta.requireAuth).toBe(true)
+  })
+
+  it('rend MealPlanView sur /meal-plan', () => {
+    const route = router.resolve('/meal-plan')
+    expect(route.matched.some((r) => r.components?.default === MealPlanView)).toBe(true)
   })
 
   it('expose une route nommée "fitness-program" sur /fitness-program', () => {

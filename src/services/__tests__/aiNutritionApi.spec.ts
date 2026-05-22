@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   llmPreferencesApi,
   mealAnalysisApi,
+  mealPlanApi,
   nutritionGoalsApi,
   nutritionMacrosApi,
 } from '../aiNutritionApi'
@@ -335,5 +336,126 @@ describe('nutritionMacrosApi', () => {
       expect(result.tdee).toBeNull()
       expect(result.macros).toBeNull()
     })
+  })
+})
+
+describe('mealPlanApi', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    seedAuthSession()
+    fetchSpy = vi.spyOn(globalThis, 'fetch')
+  })
+
+  afterEach(() => {
+    fetchSpy.mockRestore()
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+  })
+
+  const SAMPLE_MEAL = {
+    name: 'Porridge banane',
+    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9, fiber_g: null },
+    ingredients: ['flocons avoine', 'banane', 'lait'],
+    budget_eur: 1.8,
+    prep_time_min: 10,
+  }
+
+  const SAMPLE_PLAN = {
+    days: [
+      {
+        day: 1,
+        breakfast: SAMPLE_MEAL,
+        lunch: { ...SAMPLE_MEAL, name: 'Bowl quinoa' },
+        dinner: { ...SAMPLE_MEAL, name: 'Saumon vapeur' },
+      },
+    ],
+    llm_backend_used: 'ollama',
+    total_budget_eur: 18.5,
+  }
+
+  it('POSTs /api/v1/generate-meal-plan with bearer auth and the body fields', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(SAMPLE_PLAN))
+
+    const body = {
+      health_goal: 'weight_loss' as const,
+      diet_type: 'vegetarien' as const,
+      duration_days: 3,
+      allergies: ['lactose'],
+      budget_eur_per_day: 12,
+    }
+    const result = await mealPlanApi.generateMealPlan(body)
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'http://localhost:8001/api/v1/generate-meal-plan',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer jwt-test-token',
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify(body),
+      }),
+    )
+    expect(result).toEqual(SAMPLE_PLAN)
+  })
+
+  it('omits optional fields when not provided', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(SAMPLE_PLAN))
+
+    await mealPlanApi.generateMealPlan({
+      diet_type: 'omnivore',
+      duration_days: 1,
+      allergies: [],
+    })
+
+    const call = fetchSpy.mock.calls[0]
+    const sent = JSON.parse((call[1] as RequestInit).body as string)
+    expect(sent).toEqual({
+      diet_type: 'omnivore',
+      duration_days: 1,
+      allergies: [],
+    })
+  })
+
+  it('passes the AbortSignal from options to fetch', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(SAMPLE_PLAN))
+    const controller = new AbortController()
+
+    await mealPlanApi.generateMealPlan(
+      { diet_type: 'omnivore', duration_days: 1, allergies: [] },
+      { signal: controller.signal },
+    )
+
+    const call = fetchSpy.mock.calls[0]
+    expect((call[1] as RequestInit).signal).toBe(controller.signal)
+  })
+
+  it('throws ApiError with retryAfter on 429', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '45' },
+      }),
+    )
+
+    await expect(
+      mealPlanApi.generateMealPlan({
+        diet_type: 'omnivore',
+        duration_days: 1,
+        allergies: [],
+      }),
+    ).rejects.toMatchObject({ status: 429, retryAfter: 45 })
+  })
+
+  it('throws ApiError on 5xx', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 503 }))
+
+    await expect(
+      mealPlanApi.generateMealPlan({
+        diet_type: 'omnivore',
+        duration_days: 1,
+        allergies: [],
+      }),
+    ).rejects.toMatchObject({ status: 503 })
   })
 })
