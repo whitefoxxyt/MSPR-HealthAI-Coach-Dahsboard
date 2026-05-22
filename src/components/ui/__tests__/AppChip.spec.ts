@@ -15,9 +15,9 @@ describe('AppChip', () => {
     ).toBe('true')
   })
 
-  it('emits toggle when activated', async () => {
+  it('emits toggle when the chip is activated', async () => {
     const wrapper = mount(AppChip, { slots: { default: 'x' } })
-    await wrapper.trigger('click')
+    await wrapper.get('button[aria-pressed]').trigger('click')
     expect(wrapper.emitted('toggle')).toHaveLength(1)
   })
 

@@ -104,7 +104,7 @@ async function handleLogout() {
           :to="item.to"
           class="nav-link"
           active-class="nav-link--active"
-          :class="{ 'nav-link--active': item.to === '/' && route.path === '/' }"
+          :exact="item.to === '/'"
         >
           <span class="nav-link__icon" aria-hidden="true">{{ item.icon }}</span>
           <span class="nav-link__label">{{ item.label }}</span>
