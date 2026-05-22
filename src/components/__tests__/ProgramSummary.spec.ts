@@ -19,6 +19,8 @@ const PROGRAM = {
   duration_weeks: 4,
   scoring_strategy: 'hybrid_rank_fusion' as const,
   tier_at_generation: 'premium' as const,
+  health_goal_at_generation: 'muscle_strength' as const,
+  duration_min_per_session: 60,
   weeks: [
     [[exercise(1), exercise(2)], [exercise(3)]],
     [[exercise(4)], [exercise(5), exercise(6)]],

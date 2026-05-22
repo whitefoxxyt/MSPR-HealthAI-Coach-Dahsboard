@@ -7,6 +7,8 @@ import AuthView from '@/views/AuthView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import DataCleaningView from '@/views/DataCleaningView.vue'
 import FitnessProgramView from '@/views/FitnessProgramView.vue'
+import FitnessProgramHistoryView from '@/views/FitnessProgramHistoryView.vue'
+import FitnessProgramDetailView from '@/views/FitnessProgramDetailView.vue'
 import HomeView from '@/views/HomeView.vue'
 import MealAnalysisView from '@/views/MealAnalysisView.vue'
 import MealAnalysisHistoryView from '@/views/MealAnalysisHistoryView.vue'
@@ -103,6 +105,18 @@ const router = createRouter({
       path: '/fitness-program',
       name: 'fitness-program',
       component: FitnessProgramView,
+      meta: { requireAuth: true, title: 'Programme fitness — VITAL' },
+    },
+    {
+      path: '/fitness-programs',
+      name: 'fitness-programs',
+      component: FitnessProgramHistoryView,
+      meta: { requireAuth: true, title: 'Historique programmes — VITAL' },
+    },
+    {
+      path: '/fitness-programs/:id',
+      name: 'fitness-program-detail',
+      component: FitnessProgramDetailView,
       meta: { requireAuth: true, title: 'Programme fitness — VITAL' },
     },
 

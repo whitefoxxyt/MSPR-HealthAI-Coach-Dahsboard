@@ -31,6 +31,8 @@ const PROGRAM_PAYLOAD = {
   duration_weeks: 4,
   scoring_strategy: 'hybrid_rank_fusion',
   tier_at_generation: 'premium',
+  health_goal_at_generation: 'muscle_strength',
+  duration_min_per_session: 60,
   weeks: [
     [
       [
@@ -46,6 +48,33 @@ const PROGRAM_PAYLOAD = {
     ],
   ],
   created_at: '2026-05-22T12:00:00Z',
+}
+
+function programFixture(id: string, createdAt = '2026-05-22T12:00:00Z') {
+  return {
+    program_id: id,
+    user_id: 'user-1',
+    duration_weeks: 4,
+    scoring_strategy: 'hybrid_rank_fusion',
+    tier_at_generation: 'premium',
+    health_goal_at_generation: 'muscle_strength',
+    duration_min_per_session: 60,
+    weeks: [[[
+      {
+        id: 12,
+        name: 'Bench Press',
+        target_muscles: ['chest'],
+        equipment: ['barbell'],
+        difficulty: 'intermediate',
+        category: 'compound',
+      },
+    ]]],
+    created_at: createdAt,
+  }
+}
+
+function historyPayload(items: ReturnType<typeof programFixture>[], total: number, limit: number, offset: number) {
+  return { items, total, limit, offset }
 }
 
 describe('useFitnessProgramStore', () => {
@@ -68,6 +97,10 @@ describe('useFitnessProgramStore', () => {
     expect(store.program).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
+    expect(store.history).toEqual([])
+    expect(store.historyTotal).toBe(0)
+    expect(store.historyLoading).toBe(false)
+    expect(store.historyError).toBeNull()
   })
 
   it('submitProgram populates the current program on success', async () => {
@@ -143,5 +176,103 @@ describe('useFitnessProgramStore', () => {
 
     store.clearError()
     expect(store.error).toBeNull()
+  })
+
+  describe('loadHistory', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-05-22T10:00:00Z'))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('populates history and total on the first page', async () => {
+      const payload = historyPayload([programFixture('prog-1'), programFixture('prog-2')], 5, 10, 0)
+      fetchSpy.mockResolvedValueOnce(jsonResponse(payload))
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(10, 0)
+
+      expect(store.history.map((p) => p.program_id)).toEqual(['prog-1', 'prog-2'])
+      expect(store.historyTotal).toBe(5)
+      expect(store.historyError).toBeNull()
+      expect(store.historyLoading).toBe(false)
+    })
+
+    it('appends items when loading a subsequent page', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(
+          jsonResponse(historyPayload([programFixture('prog-1'), programFixture('prog-2')], 4, 2, 0)),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(historyPayload([programFixture('prog-3'), programFixture('prog-4')], 4, 2, 2)),
+        )
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(2, 0)
+      await store.loadHistory(2, 2)
+
+      expect(store.history.map((p) => p.program_id)).toEqual(['prog-1', 'prog-2', 'prog-3', 'prog-4'])
+      expect(store.historyTotal).toBe(4)
+    })
+
+    it('skips the request within the 30 s TTL for the same page', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(historyPayload([programFixture('prog-1')], 1, 10, 0)))
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(10, 0)
+      vi.advanceTimersByTime(15_000)
+      await store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-fetches once the 30 s TTL has expired', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(historyPayload([programFixture('prog-1')], 1, 10, 0)))
+        .mockResolvedValueOnce(jsonResponse(historyPayload([programFixture('prog-1b')], 1, 10, 0)))
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(10, 0)
+      vi.advanceTimersByTime(31_000)
+      await store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(store.history.map((p) => p.program_id)).toEqual(['prog-1b'])
+    })
+
+    it('captures ApiError with retryAfter on 429 and leaves history unchanged', async () => {
+      fetchSpy
+        .mockResolvedValueOnce(jsonResponse(historyPayload([programFixture('prog-1')], 1, 10, 0)))
+        .mockResolvedValueOnce(
+          new Response('Too Many Requests', {
+            status: 429,
+            headers: { 'Retry-After': '14' },
+          }),
+        )
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(10, 0)
+      vi.advanceTimersByTime(31_000)
+      await store.loadHistory(10, 0)
+
+      expect(store.historyError?.status).toBe(429)
+      expect(store.historyError?.retryAfter).toBe(14)
+      expect(store.history.map((p) => p.program_id)).toEqual(['prog-1'])
+    })
+
+    it('exposes findProgramById that returns a program loaded into history', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(historyPayload([programFixture('prog-a'), programFixture('prog-b')], 2, 10, 0)),
+      )
+      const store = useFitnessProgramStore()
+
+      await store.loadHistory(10, 0)
+
+      expect(store.findProgramById('prog-a')?.program_id).toBe('prog-a')
+      expect(store.findProgramById('unknown')).toBeNull()
+    })
   })
 })
