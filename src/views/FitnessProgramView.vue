@@ -12,7 +12,8 @@ import FeedbackForm from '@/components/FeedbackForm.vue'
 import { useFitnessProfileStore } from '@/stores/fitnessProfile'
 import { useFitnessProgramStore } from '@/stores/fitnessProgram'
 import { useProgramFeedbackStore } from '@/stores/programFeedback'
-import type { HealthGoalFitness, ProgramFeedbackBody } from '@/services/recoFitnessApi'
+import type { ProgramFeedbackBody } from '@/services/recoFitnessApi'
+import { fitnessGoalTag } from '@/utils/fitnessGoals'
 
 const profileStore = useFitnessProfileStore()
 const programStore = useFitnessProgramStore()
@@ -30,21 +31,7 @@ const profileMissing = computed(
   () => profileStore.error === null && !profileStore.loading && !profileReady.value,
 )
 
-const goalTag = computed<string>(() => {
-  const goal: HealthGoalFitness | undefined = profileStore.profile?.health_goal_fitness
-  switch (goal) {
-    case 'muscle_strength':
-      return 'Force'
-    case 'fat_loss':
-      return 'Cardio'
-    case 'endurance':
-      return 'Endurance'
-    case 'general_health':
-      return 'Santé'
-    default:
-      return 'Personnalisé'
-  }
-})
+const goalTag = computed<string>(() => fitnessGoalTag(profileStore.profile?.health_goal_fitness))
 
 const errorMessage = computed<string>(() => {
   const status = programStore.error?.status
@@ -234,14 +221,13 @@ onMounted(() => {
             >
               Donner un feedback
             </AppButton>
-            <span
+            <RouterLink
               data-testid="program-history-link"
-              class="program-link program-link--disabled"
-              aria-disabled="true"
-              role="link"
+              to="/fitness-programs"
+              class="program-link"
             >
-              Historique <span class="program-link__hint">(bientôt)</span>
-            </span>
+              Historique
+            </RouterLink>
           </div>
 
           <div

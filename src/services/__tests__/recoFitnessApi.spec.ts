@@ -295,6 +295,88 @@ describe('recoFitnessApi', () => {
     })
   })
 
+  describe('listPrograms', () => {
+    const HISTORY_PAYLOAD = {
+      items: [
+        {
+          program_id: 'prog-aaa',
+          user_id: 'user-1',
+          duration_weeks: 4,
+          scoring_strategy: 'hybrid_rank_fusion' as const,
+          tier_at_generation: 'premium' as const,
+          health_goal_at_generation: 'muscle_strength' as const,
+          duration_min_per_session: 60,
+          weeks: [[[
+            {
+              id: 12,
+              name: 'Bench Press',
+              target_muscles: ['chest'],
+              equipment: ['barbell'],
+              difficulty: 'intermediate',
+              category: 'compound',
+            },
+          ]]],
+          created_at: '2026-05-22T12:00:00Z',
+        },
+      ],
+      total: 1,
+      limit: 10,
+      offset: 0,
+    }
+
+    it('issues GET /api/v1/programs/me with limit + offset query params and bearer auth', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(HISTORY_PAYLOAD))
+
+      const result = await recoFitnessApi.listPrograms(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/programs/me?limit=10&offset=0',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
+        }),
+      )
+      expect(result).toEqual(HISTORY_PAYLOAD)
+    })
+
+    it('passes a non-zero offset for subsequent pages', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...HISTORY_PAYLOAD, offset: 10 }))
+
+      await recoFitnessApi.listPrograms(10, 10)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/programs/me?limit=10&offset=10',
+        expect.anything(),
+      )
+    })
+
+    it('throws ApiError with status 401 on unauthenticated calls', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Unauthorized', { status: 401 }))
+
+      await expect(recoFitnessApi.listPrograms(10, 0)).rejects.toMatchObject({ status: 401 })
+    })
+
+    it('throws ApiError with retryAfter on 429', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Too Many Requests', {
+          status: 429,
+          headers: { 'Retry-After': '12' },
+        }),
+      )
+
+      await expect(recoFitnessApi.listPrograms(10, 0)).rejects.toMatchObject({
+        status: 429,
+        retryAfter: 12,
+      })
+    })
+
+    it('throws ApiError with status code on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
+
+      await expect(recoFitnessApi.listPrograms(10, 0)).rejects.toMatchObject({ status: 502 })
+    })
+  })
+
   describe('updateFitnessProfile', () => {
     it('issues PUT /api/v1/fitness-profile/me with the body serialised as JSON', async () => {
       const body = {

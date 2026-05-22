@@ -417,4 +417,19 @@ describe('FitnessProgramView', () => {
       expect(fetchSpy.mock.calls.length).toBe(callsBefore)
     })
   })
+
+  it('routes the history link to /fitness-programs once a program has been generated', async () => {
+    mockFetchInOrder(fetchSpy, [
+      () => jsonResponse(FITNESS_PROFILE),
+      () => jsonResponse(PROGRAM),
+    ])
+
+    const wrapper = await mountView()
+    await flushPromises()
+    await wrapper.find('[data-testid="generate-program-cta"]').trigger('click')
+    await flushPromises()
+
+    const link = wrapper.find('[data-testid="program-history-link"]')
+    expect(link.attributes('href')).toBe('/fitness-programs')
+  })
 })

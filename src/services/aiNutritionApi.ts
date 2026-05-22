@@ -102,6 +102,24 @@ export interface MealAnalysisResult {
   llm_backend_used: LLMBackend
 }
 
+export interface MealAnalysisHistoryItem {
+  id: string
+  created_at: string
+  meal_type: MealType | string | null
+  image_url: string | null
+  detected_foods: DetectedFood[]
+  macros: MealMacros
+  insight: string
+  llm_backend_used: LLMBackend
+}
+
+export interface MealAnalysesListResponse {
+  items: MealAnalysisHistoryItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
@@ -177,6 +195,15 @@ export const mealAnalysisApi = {
       body,
     })
     return parseJsonOrThrow<MealAnalysisResult>(response)
+  },
+
+  async listMealAnalyses(limit: number, offset: number): Promise<MealAnalysesListResponse> {
+    const url = `${AI_NUTRITION_BASE_URL}/api/v1/meal-analyses/me?limit=${limit}&offset=${offset}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: authHeaders(),
+    })
+    return parseJsonOrThrow<MealAnalysesListResponse>(response)
   },
 }
 
