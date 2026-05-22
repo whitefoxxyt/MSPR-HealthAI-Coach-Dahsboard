@@ -273,6 +273,36 @@ describe('ProfileView', () => {
     expect(banner.text()).toContain('12')
   })
 
+  it('shows an error banner in the macros section when /me/macros returns 5xx', async () => {
+    mockFetchInOrder(fetchSpy, [
+      () => jsonResponse(GOALS_PAYLOAD),
+      () => new Response('Server Error', { status: 503 }),
+      () => jsonResponse(FITNESS_PROFILE_PAYLOAD),
+    ])
+
+    const wrapper = await mountView()
+    await flushPromises()
+
+    const banner = wrapper.find('[data-testid="macros-error"]')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toMatch(/indisponible|impossible/i)
+  })
+
+  it('shows the macros rate-limit banner with retry-after on 429 from /me/macros', async () => {
+    mockFetchInOrder(fetchSpy, [
+      () => jsonResponse(GOALS_PAYLOAD),
+      () => new Response('Too Many Requests', { status: 429, headers: { 'Retry-After': '18' } }),
+      () => jsonResponse(FITNESS_PROFILE_PAYLOAD),
+    ])
+
+    const wrapper = await mountView()
+    await flushPromises()
+
+    const banner = wrapper.find('[data-testid="macros-rate-limit"]')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toContain('18')
+  })
+
   it('toggling an allergy chip includes it in the PUT body', async () => {
     mockFetchInOrder(fetchSpy, [
       () => jsonResponse({ ...GOALS_PAYLOAD, allergies: [] }),

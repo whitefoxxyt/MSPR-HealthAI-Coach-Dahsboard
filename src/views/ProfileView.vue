@@ -119,6 +119,7 @@ const fitnessForm = reactive<FitnessForm>({
 const goalsSubmitting = ref(false)
 const fitnessSubmitting = ref(false)
 const goalsRateLimit = ref<number | null>(null)
+const macrosRateLimit = ref<number | null>(null)
 const fitnessRateLimit = ref<number | null>(null)
 
 watch(
@@ -160,6 +161,15 @@ watch(
 )
 
 watch(
+  () => nutritionStore.macrosError,
+  (err) => {
+    if (err?.status === 429 && err.retryAfter) {
+      macrosRateLimit.value = err.retryAfter
+    }
+  },
+)
+
+watch(
   () => fitnessStore.error,
   (err) => {
     if (err?.status === 429 && err.retryAfter) {
@@ -177,42 +187,12 @@ const macrosState = computed(() => {
   return { kind: 'complete' as const, tdee: m.tdee, macros: m.macros }
 })
 
-function isAllergySelected(value: string): boolean {
-  return goalsForm.allergies.includes(value)
-}
-
-function toggleAllergy(value: string) {
-  const idx = goalsForm.allergies.indexOf(value)
+function toggleInList(list: string[], value: string) {
+  const idx = list.indexOf(value)
   if (idx >= 0) {
-    goalsForm.allergies.splice(idx, 1)
+    list.splice(idx, 1)
   } else {
-    goalsForm.allergies.push(value)
-  }
-}
-
-function isEquipmentSelected(value: string): boolean {
-  return fitnessForm.equipment.includes(value)
-}
-
-function toggleEquipment(value: string) {
-  const idx = fitnessForm.equipment.indexOf(value)
-  if (idx >= 0) {
-    fitnessForm.equipment.splice(idx, 1)
-  } else {
-    fitnessForm.equipment.push(value)
-  }
-}
-
-function isLimitationSelected(value: string): boolean {
-  return fitnessForm.limitations.includes(value)
-}
-
-function toggleLimitation(value: string) {
-  const idx = fitnessForm.limitations.indexOf(value)
-  if (idx >= 0) {
-    fitnessForm.limitations.splice(idx, 1)
-  } else {
-    fitnessForm.limitations.push(value)
+    list.push(value)
   }
 }
 
@@ -333,8 +313,8 @@ onMounted(() => {
               <AppChip
                 v-for="opt in ALLERGY_OPTIONS"
                 :key="opt.value"
-                :selected="isAllergySelected(opt.value)"
-                @toggle="toggleAllergy(opt.value)"
+                :selected="goalsForm.allergies.includes(opt.value)"
+                @toggle="toggleInList(goalsForm.allergies, opt.value)"
               >
                 {{ opt.label }}
               </AppChip>
@@ -363,8 +343,28 @@ onMounted(() => {
         title="Macros calculées"
         data-testid="macros-section"
       >
+        <RateLimitBanner
+          v-if="macrosRateLimit"
+          data-testid="macros-rate-limit"
+          :retry-after="macrosRateLimit"
+          @dismiss="macrosRateLimit = null"
+        />
+        <p
+          v-else-if="nutritionStore.macrosError"
+          role="alert"
+          data-testid="macros-error"
+          class="error-banner"
+        >
+          <strong>Erreur</strong>
+          {{ nutritionStore.macrosError.status >= 500
+            ? 'Service nutrition indisponible. Réessaye dans un instant.'
+            : nutritionStore.macrosError.status === 401
+              ? 'Session expirée. Reconnecte-toi.'
+              : 'Impossible de calculer les macros.' }}
+        </p>
+
         <EmptyState
-          v-if="macrosState?.kind === 'incomplete'"
+          v-else-if="macrosState?.kind === 'incomplete'"
           icon="✦"
           title="Profil biométrique incomplet"
           message="Complète les champs ci-dessous pour activer le calcul des macros (TDEE)."
@@ -449,8 +449,8 @@ onMounted(() => {
               <AppChip
                 v-for="opt in EQUIPMENT_OPTIONS"
                 :key="opt.value"
-                :selected="isEquipmentSelected(opt.value)"
-                @toggle="toggleEquipment(opt.value)"
+                :selected="fitnessForm.equipment.includes(opt.value)"
+                @toggle="toggleInList(fitnessForm.equipment, opt.value)"
               >
                 {{ opt.label }}
               </AppChip>
@@ -463,8 +463,8 @@ onMounted(() => {
               <AppChip
                 v-for="opt in LIMITATION_OPTIONS"
                 :key="opt.value"
-                :selected="isLimitationSelected(opt.value)"
-                @toggle="toggleLimitation(opt.value)"
+                :selected="fitnessForm.limitations.includes(opt.value)"
+                @toggle="toggleInList(fitnessForm.limitations, opt.value)"
               >
                 {{ opt.label }}
               </AppChip>
