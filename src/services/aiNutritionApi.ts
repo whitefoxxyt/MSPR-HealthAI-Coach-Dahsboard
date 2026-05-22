@@ -50,12 +50,39 @@ export interface MeMacrosResponse {
   macros: MacroTargetsView | null
 }
 
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export interface DetectedFood {
+  name: string
+  confidence: number
+}
+
+export interface MealMacros {
+  calories: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  fiber_g: number
+}
+
+export interface MealAnalysisResult {
+  detected_foods: DetectedFood[]
+  macros: MealMacros
+  insight: string
+  llm_backend_used: LLMBackend
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
+}
+
+function multipartAuthHeaders(): Record<string, string> {
+  const token = authSessionManager.getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export const llmPreferencesApi = {
@@ -104,6 +131,22 @@ export const nutritionMacrosApi = {
       headers: authHeaders(),
     })
     return parseJsonOrThrow<MeMacrosResponse>(response)
+  },
+}
+
+export const mealAnalysisApi = {
+  async analyzeMeal(file: File, mealType?: MealType | string): Promise<MealAnalysisResult> {
+    const body = new FormData()
+    body.append('file', file)
+    if (mealType) {
+      body.append('meal_type', mealType)
+    }
+    const response = await fetch(`${AI_NUTRITION_BASE_URL}/api/v1/analyze-meal`, {
+      method: 'POST',
+      headers: multipartAuthHeaders(),
+      body,
+    })
+    return parseJsonOrThrow<MealAnalysisResult>(response)
   },
 }
 
