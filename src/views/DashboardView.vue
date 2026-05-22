@@ -38,7 +38,7 @@
         </span>
       </RouterLink>
       <RouterLink to="/admin/validation" class="action-btn action-btn--info">
-        <font-awesome-icon :icon="['fas', 'shield-check']" aria-hidden="true" />
+        <font-awesome-icon :icon="['fas', 'shield-halved']" aria-hidden="true" />
         <span>Workflow de validation</span>
         <span v-if="pendingRecordsCount > 0" class="action-badge" aria-label="{{ pendingRecordsCount }} enregistrements en attente">
           {{ pendingRecordsCount }}

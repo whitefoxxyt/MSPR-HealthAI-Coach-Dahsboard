@@ -30,6 +30,21 @@ const DIET_TYPE_OPTIONS: Array<{ value: DietType; label: string }> = [
   { value: 'sans_gluten', label: 'Sans gluten' },
 ]
 
+const GENDER_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Non renseigné' },
+  { value: 'male', label: 'Homme' },
+  { value: 'female', label: 'Femme' },
+]
+
+const ACTIVITY_LEVEL_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Non renseigné' },
+  { value: 'sedentary', label: 'Sédentaire' },
+  { value: 'light', label: 'Légère (1-3 séances/semaine)' },
+  { value: 'moderate', label: 'Modérée (3-5 séances/semaine)' },
+  { value: 'active', label: 'Active (6-7 séances/semaine)' },
+  { value: 'very_active', label: 'Très active (sport quotidien intense)' },
+]
+
 const ALLERGY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'arachides', label: 'Arachides' },
   { value: 'fruits a coque', label: 'Fruits à coque' },
@@ -86,6 +101,11 @@ interface GoalsForm {
   fat_g: string
   allergies: string[]
   diet_type: DietType
+  gender: '' | 'male' | 'female'
+  age: string
+  weight_kg: string
+  height_cm: string
+  activity_level: '' | 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
 }
 
 interface FitnessForm {
@@ -105,6 +125,11 @@ const goalsForm = reactive<GoalsForm>({
   fat_g: '',
   allergies: [],
   diet_type: 'omnivore',
+  gender: '',
+  age: '',
+  weight_kg: '',
+  height_cm: '',
+  activity_level: '',
 })
 
 const fitnessForm = reactive<FitnessForm>({
@@ -133,6 +158,11 @@ watch(
     goalsForm.fat_g = goals.fat_g ? Number.parseFloat(goals.fat_g).toString() : ''
     goalsForm.allergies = [...(goals.allergies ?? [])]
     goalsForm.diet_type = (goals.diet_type ?? 'omnivore') as DietType
+    goalsForm.gender = (goals.gender ?? '') as GoalsForm['gender']
+    goalsForm.age = goals.age != null ? String(goals.age) : ''
+    goalsForm.weight_kg = goals.weight_kg != null ? String(goals.weight_kg) : ''
+    goalsForm.height_cm = goals.height_cm != null ? String(goals.height_cm) : ''
+    goalsForm.activity_level = (goals.activity_level ?? '') as GoalsForm['activity_level']
   },
   { immediate: true },
 )
@@ -213,6 +243,11 @@ async function submitGoals() {
     fat_g: toNumberOrNull(goalsForm.fat_g),
     allergies: [...goalsForm.allergies],
     diet_type: goalsForm.diet_type,
+    gender: goalsForm.gender ? goalsForm.gender : null,
+    age: toNumberOrNull(goalsForm.age),
+    weight_kg: toNumberOrNull(goalsForm.weight_kg),
+    height_cm: toNumberOrNull(goalsForm.height_cm),
+    activity_level: goalsForm.activity_level ? goalsForm.activity_level : null,
   })
   if (!nutritionStore.error) {
     await nutritionStore.fetchMacros(true)
@@ -329,6 +364,35 @@ onMounted(() => {
             />
           </div>
 
+          <fieldset class="bio-fieldset">
+            <legend class="bio-fieldset__legend">Biométrie (pour le calcul TDEE)</legend>
+            <div class="grid-2">
+              <div data-testid="goals-gender">
+                <AppSelect
+                  v-model="goalsForm.gender"
+                  label="Genre"
+                  :options="GENDER_OPTIONS"
+                />
+              </div>
+              <div data-testid="goals-age">
+                <AppInput v-model="goalsForm.age" label="Âge" type="number" />
+              </div>
+              <div data-testid="goals-weight">
+                <AppInput v-model="goalsForm.weight_kg" label="Poids (kg)" type="number" />
+              </div>
+              <div data-testid="goals-height">
+                <AppInput v-model="goalsForm.height_cm" label="Taille (cm)" type="number" />
+              </div>
+            </div>
+            <div data-testid="goals-activity-level">
+              <AppSelect
+                v-model="goalsForm.activity_level"
+                label="Niveau d'activité"
+                :options="ACTIVITY_LEVEL_OPTIONS"
+              />
+            </div>
+          </fieldset>
+
           <div class="form-actions">
             <AppButton type="submit" :loading="goalsSubmitting || nutritionStore.loading">
               Enregistrer les objectifs
@@ -366,13 +430,13 @@ onMounted(() => {
         <EmptyState
           v-else-if="macrosState?.kind === 'incomplete'"
           icon="✦"
-          title="Profil biométrique incomplet"
-          message="Complète les champs ci-dessous pour activer le calcul des macros (TDEE)."
+          title="Encore quelques infos"
+          message="Renseigne ta biométrie (genre, âge, poids, taille, niveau d'activité) ci-dessus pour activer le calcul du TDEE."
         >
           <template #action>
-            <ul class="missing-list" data-testid="macros-missing">
-              <li v-for="field in macrosState.missing" :key="field">
-                {{ formatMissingField(field) }} <span class="missing-list__raw">({{ field }})</span>
+            <ul class="missing-pills" data-testid="macros-missing" aria-label="Champs à compléter">
+              <li v-for="field in macrosState.missing" :key="field" class="missing-pills__item">
+                {{ formatMissingField(field) }}
               </li>
             </ul>
           </template>
@@ -534,6 +598,26 @@ onMounted(() => {
   gap: var(--sp-sm);
 }
 
+.bio-fieldset {
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  border-radius: var(--r-md);
+  padding: var(--sp-md) var(--sp-lg) var(--sp-lg);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.bio-fieldset__legend {
+  padding: 0 var(--sp-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-gray-600);
+}
+
 .chips-field__legend {
   font-size: 0.8125rem;
   font-weight: 500;
@@ -625,27 +709,22 @@ onMounted(() => {
   font-style: italic;
 }
 
-.missing-list {
+.missing-pills {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--sp-xs);
-  text-align: left;
+  justify-content: center;
 }
 
-.missing-list li {
-  padding: 0.45rem 0.85rem;
-  background: var(--c-cream-2);
-  border-radius: var(--r-sm);
-  font-size: 0.875rem;
-  color: var(--c-onyx);
-}
-
-.missing-list__raw {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--c-gray-600);
+.missing-pills__item {
+  padding: 0.4rem 0.85rem;
+  background: var(--c-onyx);
+  color: var(--c-cream);
+  border-radius: var(--r-pill);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 </style>

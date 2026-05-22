@@ -47,6 +47,16 @@ import {
   faUserCheck,
   faEye,
   faFile,
+  faArrowsRotate,
+  faShieldHalved,
+  faFileExport,
+  faArrowTrendUp,
+  faArrowTrendDown,
+  faBan,
+  faPercent,
+  faFire,
+  faGem,
+  faFaceSmile,
 } from '@fortawesome/free-solid-svg-icons'
 
 // Ajouter les icônes à la bibliothèque
@@ -88,6 +98,16 @@ library.add(
   faUserCheck,
   faEye,
   faFile,
+  faArrowsRotate,
+  faShieldHalved,
+  faFileExport,
+  faArrowTrendUp,
+  faArrowTrendDown,
+  faBan,
+  faPercent,
+  faFire,
+  faGem,
+  faFaceSmile,
 )
 
 const app = createApp(App)

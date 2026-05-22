@@ -16,6 +16,14 @@ export type HealthGoal = 'weight_loss' | 'muscle_gain' | 'balance' | 'sport_perf
 
 export type DietType = 'omnivore' | 'vegetarien' | 'vegan' | 'sans_gluten'
 
+export type Gender = 'male' | 'female'
+export type ActivityLevel =
+  | 'sedentary'
+  | 'light'
+  | 'moderate'
+  | 'active'
+  | 'very_active'
+
 export interface NutritionGoals {
   user_id: string
   health_goal: HealthGoal | null
@@ -25,6 +33,11 @@ export interface NutritionGoals {
   fat_g: string | null
   allergies: string[]
   diet_type: DietType | string | null
+  gender?: Gender | null
+  age?: number | null
+  weight_kg?: string | number | null
+  height_cm?: string | number | null
+  activity_level?: ActivityLevel | null
 }
 
 export interface NutritionGoalsUpdate {
@@ -35,6 +48,11 @@ export interface NutritionGoalsUpdate {
   fat_g?: number | null
   allergies?: string[]
   diet_type?: DietType | null
+  gender?: Gender | null
+  age?: number | null
+  weight_kg?: number | null
+  height_cm?: number | null
+  activity_level?: ActivityLevel | null
 }
 
 export interface MacroTargetsView {
@@ -54,16 +72,18 @@ export interface MeMacrosResponse {
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
 export interface DetectedFood {
-  name: string
+  name?: string
+  label?: string
   confidence: number
+  nutrition?: unknown
 }
 
 export interface MealMacros {
-  calories: number
-  protein_g: number
-  carbs_g: number
-  fat_g: number
-  fiber_g: number | null
+  calories?: number | null
+  protein_g?: number | null
+  carbs_g?: number | null
+  fat_g?: number | null
+  fiber_g?: number | null
 }
 
 export interface Meal {
@@ -114,10 +134,17 @@ export interface MealPlanListResponse {
 }
 
 export interface MealAnalysisResult {
+  analysis_id?: number
   detected_foods: DetectedFood[]
   macros: MealMacros
-  insight: string
-  llm_backend_used: LLMBackend
+  insight?: string
+  recommendations?: string[]
+  llm_backend_used?: LLMBackend
+  profile_completion_required?: boolean
+  missing_fields?: string[]
+  fallback?: boolean
+  imbalances?: unknown[]
+  warnings?: string[]
 }
 
 export interface MealAnalysisHistoryItem {
@@ -203,7 +230,7 @@ export const nutritionMacrosApi = {
 export const mealAnalysisApi = {
   async analyzeMeal(file: File, mealType?: MealType | string): Promise<MealAnalysisResult> {
     const body = new FormData()
-    body.append('file', file)
+    body.append('photo', file)
     if (mealType) {
       body.append('meal_type', mealType)
     }

@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AIInsightCard from '@/components/ui/AIInsightCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import ExportActions from '@/components/ui/ExportActions.vue'
 import FileDropzone, { type DropzoneError } from '@/components/ui/FileDropzone.vue'
 import MacrosGrid from '@/components/ui/MacrosGrid.vue'
 import RateLimitBanner from '@/components/ui/RateLimitBanner.vue'
 import { useMealAnalysisStore } from '@/stores/mealAnalysis'
+import { useNutritionGoalsStore } from '@/stores/nutritionGoals'
 import { exportAnalysisJson, exportAnalysisPdf } from '@/services/exportService'
 import type { MealType } from '@/services/aiNutritionApi'
 
@@ -25,6 +27,21 @@ const MEAL_TYPE_OPTIONS: Array<{ value: MealType; label: string }> = [
 ]
 
 const store = useMealAnalysisStore()
+const nutritionStore = useNutritionGoalsStore()
+
+onMounted(() => {
+  nutritionStore.fetchMacros()
+})
+
+const macrosReady = computed(
+  () =>
+    nutritionStore.macros !== null &&
+    !nutritionStore.macros.profile_completion_required,
+)
+const profileChecked = computed(
+  () => !nutritionStore.macrosLoading || nutritionStore.macros !== null,
+)
+const needsProfile = computed(() => profileChecked.value && !macrosReady.value)
 
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
@@ -126,8 +143,22 @@ onBeforeUnmount(() => {
       tes macros estimées avec une suggestion personnalisée du coach IA.
     </p>
 
+    <EmptyState
+      v-if="needsProfile"
+      data-testid="meal-analysis-needs-profile"
+      icon="✦"
+      title="Quelques infos avant de commencer"
+      message="Renseigne ton profil pour que le coach IA puisse calibrer tes macros et personnaliser ses recommandations."
+    >
+      <template #action>
+        <RouterLink to="/profil" class="meal-analysis__profile-link">
+          Compléter mon profil →
+        </RouterLink>
+      </template>
+    </EmptyState>
+
     <!-- Step 1: dropzone + meal_type -->
-    <section v-if="!showResult && !store.loading" class="block">
+    <section v-else-if="!showResult && !store.loading" class="block">
       <header class="block__head">
         <p class="block__eyebrow">01 · Ta photo</p>
         <h2 class="block__title">Glisse ou choisis une image.</h2>
@@ -229,11 +260,11 @@ onBeforeUnmount(() => {
           />
           <ul data-testid="detected-foods" class="foods">
             <li
-              v-for="food in store.analysis.detected_foods"
-              :key="food.name"
+              v-for="(food, idx) in store.analysis.detected_foods"
+              :key="(food.label || food.name || '') + idx"
               class="foods__item"
             >
-              <span class="foods__name">{{ food.name }}</span>
+              <span class="foods__name">{{ food.label || food.name }}</span>
               <span class="foods__confidence">{{ confidencePct(food.confidence) }}</span>
             </li>
           </ul>
@@ -244,8 +275,18 @@ onBeforeUnmount(() => {
             <p class="block__eyebrow">Macros estimées</p>
           </header>
           <MacrosGrid :macros="store.analysis.macros" />
+          <p
+            v-if="store.analysis.profile_completion_required"
+            class="result__hint"
+            role="status"
+          >
+            Complète ton profil nutritionnel pour activer le calcul personnalisé
+            des macros et de l'insight IA.
+            <RouterLink to="/profil" class="result__hint-link">Aller au profil →</RouterLink>
+          </p>
           <AIInsightCard
-            :text="store.analysis.insight"
+            v-else
+            :text="store.analysis.insight || (store.analysis.recommendations && store.analysis.recommendations.join(' ')) || 'Aucune recommandation pour ce repas.'"
             :backend="store.analysis.llm_backend_used"
           />
         </div>
@@ -407,6 +448,30 @@ onBeforeUnmount(() => {
   gap: var(--sp-md);
 }
 
+.result__hint {
+  margin: 0;
+  padding: var(--sp-md) var(--sp-lg);
+  background: rgba(200, 255, 71, 0.18);
+  border: 1px solid rgba(158, 214, 38, 0.45);
+  border-radius: var(--r-md);
+  color: var(--c-onyx);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.result__hint-link {
+  display: inline-block;
+  margin-top: var(--sp-xs);
+  color: var(--c-onyx);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.result__hint-link:hover {
+  color: var(--c-acid-dark);
+}
+
 .result__image {
   width: 100%;
   max-height: 280px;
@@ -481,5 +546,31 @@ onBeforeUnmount(() => {
   .skeleton__cell {
     animation: none;
   }
+}
+
+.meal-analysis__profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding: 0.7rem 1.4rem;
+  background: var(--c-onyx);
+  color: var(--c-cream);
+  border-radius: var(--r-pill);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform var(--d-micro), background var(--d-micro);
+}
+
+.meal-analysis__profile-link:hover {
+  background: var(--c-onyx-2);
+  color: var(--c-cream);
+  transform: translateY(-1px);
+}
+
+.meal-analysis__profile-link:focus-visible {
+  outline: 2px solid var(--c-acid-dark);
+  outline-offset: 3px;
 }
 </style>

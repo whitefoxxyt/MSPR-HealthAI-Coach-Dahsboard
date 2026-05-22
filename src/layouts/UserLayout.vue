@@ -330,7 +330,8 @@ async function handleLogout() {
   background: rgba(20, 20, 20, 0.05);
 }
 
-.nav-link--active {
+.nav-link--active,
+.nav-link--active:hover {
   background: var(--c-onyx);
   color: var(--c-cream);
 }

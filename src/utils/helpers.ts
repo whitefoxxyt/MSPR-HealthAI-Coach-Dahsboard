@@ -34,14 +34,16 @@ export function formatDateShort(isoDate: string): string {
 /**
  * Formate un nombre avec séparateur de milliers
  */
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | null | undefined): string {
+  if (num == null || Number.isNaN(num)) return '—'
   return new Intl.NumberFormat('fr-FR').format(num)
 }
 
 /**
  * Formate un pourcentage
  */
-export function formatPercentage(value: number, decimals = 1): string {
+export function formatPercentage(value: number | null | undefined, decimals = 1): string {
+  if (value == null || Number.isNaN(value)) return '— %'
   return `${value.toFixed(decimals)} %`
 }
 
