@@ -59,7 +59,7 @@ describe('FeedbackForm', () => {
     await wrapper.find('[data-testid="feedback-comment"]').setValue('Top, varié et progressif.')
     await wrapper.find('[data-testid="feedback-exercise"]').setValue('2')
 
-    await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+    await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
 
     expect(wrapper.emitted('submit')).toBeDefined()
     expect(wrapper.emitted('submit')![0]).toEqual([
@@ -77,7 +77,7 @@ describe('FeedbackForm', () => {
 
     await wrapper.find('[data-testid="feedback-rating-5"]').trigger('click')
 
-    await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+    await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
 
     expect(wrapper.emitted('submit')![0]).toEqual([
       {
@@ -92,7 +92,7 @@ describe('FeedbackForm', () => {
   it('does not emit "submit" when no rating is selected', async () => {
     const wrapper = mount(FeedbackForm)
 
-    await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+    await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
 
     expect(wrapper.emitted('submit')).toBeUndefined()
   })

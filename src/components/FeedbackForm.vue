@@ -59,7 +59,12 @@ function onCancel() {
 </script>
 
 <template>
-  <form class="feedback-form" novalidate @submit.prevent="onSubmit">
+  <form
+    data-testid="feedback-form"
+    class="feedback-form"
+    novalidate
+    @submit.prevent="onSubmit"
+  >
     <fieldset class="feedback-form__field">
       <legend class="feedback-form__label">Note</legend>
       <div class="rating" role="radiogroup" aria-label="Note du programme">
@@ -139,7 +144,6 @@ function onCancel() {
         data-testid="feedback-submit"
         :disabled="!canSubmit"
         :loading="loading"
-        @click="onSubmit"
       >
         Envoyer le feedback
       </AppButton>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -23,6 +23,7 @@ const RATE_LIMIT_FALLBACK_SECONDS = 60
 const rateLimit = ref<number | null>(null)
 const feedbackOpen = ref(false)
 const feedbackRateLimit = ref<number | null>(null)
+const feedbackPanelRef = ref<HTMLElement | null>(null)
 
 const profileReady = computed(() => profileStore.profile !== null)
 const profileMissing = computed(
@@ -126,6 +127,20 @@ async function submitFeedback(body: ProgramFeedbackBody) {
 function dismissSuccess() {
   feedbackStore.clearLastSubmitted()
 }
+
+watch(feedbackOpen, async (open) => {
+  if (open) {
+    await nextTick()
+    feedbackPanelRef.value?.focus()
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+})
 
 onMounted(() => {
   void profileStore.fetchProfile()
@@ -278,7 +293,12 @@ onMounted(() => {
           aria-labelledby="feedback-modal-title"
           @click.self="closeFeedback"
         >
-          <div class="feedback-modal__panel" @keydown.esc.stop="closeFeedback">
+          <div
+            ref="feedbackPanelRef"
+            class="feedback-modal__panel"
+            tabindex="-1"
+            @keydown.esc.stop="closeFeedback"
+          >
             <header class="feedback-modal__head">
               <h2 id="feedback-modal-title" class="feedback-modal__title">
                 Feedback sur le programme
@@ -557,6 +577,7 @@ onMounted(() => {
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lift, 0 24px 48px rgba(0, 0, 0, 0.25));
   overflow-y: auto;
+  outline: none;
 }
 
 .feedback-modal__head {

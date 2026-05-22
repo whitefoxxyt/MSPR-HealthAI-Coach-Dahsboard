@@ -338,7 +338,7 @@ describe('FitnessProgramView', () => {
 
       await wrapper.find('[data-testid="feedback-rating-4"]').trigger('click')
       await wrapper.find('[data-testid="feedback-completed"]').setValue(true)
-      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
       await flushPromises()
 
       const putCall = fetchSpy.mock.calls.find(
@@ -375,7 +375,7 @@ describe('FitnessProgramView', () => {
       await flushPromises()
 
       await wrapper.find('[data-testid="feedback-rating-3"]').trigger('click')
-      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
       await flushPromises()
 
       const banner = wrapper.find('[data-testid="feedback-rate-limit"]')
@@ -398,7 +398,7 @@ describe('FitnessProgramView', () => {
       await flushPromises()
 
       await wrapper.find('[data-testid="feedback-rating-2"]').trigger('click')
-      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-form"]').trigger('submit.prevent')
       await flushPromises()
 
       const banner = wrapper.find('[data-testid="feedback-error"]')
