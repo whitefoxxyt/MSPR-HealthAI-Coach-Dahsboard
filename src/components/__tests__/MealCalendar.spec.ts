@@ -6,7 +6,7 @@ import type { DayPlan } from '@/services/aiNutritionApi'
 function makeMeal(name: string, overrides: Partial<DayPlan['breakfast']> = {}) {
   return {
     name,
-    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9 },
+    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9, fiber_g: null },
     ingredients: ['ingrédient A', 'ingrédient B'],
     budget_eur: 1.8,
     prep_time_min: 10,

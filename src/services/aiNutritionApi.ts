@@ -3,6 +3,7 @@ import { ApiError, parseJsonOrThrow } from '@/services/apiError'
 
 const AI_NUTRITION_BASE_URL = import.meta.env.VITE_AI_NUTRITION_BASE_URL || 'http://localhost:8001'
 const PREFERENCES_PATH = '/api/v1/me/preferences'
+const ANALYZE_MEAL_PATH = '/api/v1/analyze-meal'
 
 export type LLMBackend = 'mistral' | 'ollama'
 
@@ -50,11 +51,19 @@ export interface MeMacrosResponse {
   macros: MacroTargetsView | null
 }
 
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export interface DetectedFood {
+  name: string
+  confidence: number
+}
+
 export interface MealMacros {
   calories: number
   protein_g: number
   carbs_g: number
   fat_g: number
+  fiber_g: number | null
 }
 
 export interface Meal {
@@ -86,12 +95,24 @@ export interface MealPlanRequest {
   budget_eur_per_day?: number | null
 }
 
+export interface MealAnalysisResult {
+  detected_foods: DetectedFood[]
+  macros: MealMacros
+  insight: string
+  llm_backend_used: LLMBackend
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
+}
+
+function multipartAuthHeaders(): Record<string, string> {
+  const token = authSessionManager.getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export const llmPreferencesApi = {
@@ -140,6 +161,22 @@ export const nutritionMacrosApi = {
       headers: authHeaders(),
     })
     return parseJsonOrThrow<MeMacrosResponse>(response)
+  },
+}
+
+export const mealAnalysisApi = {
+  async analyzeMeal(file: File, mealType?: MealType | string): Promise<MealAnalysisResult> {
+    const body = new FormData()
+    body.append('file', file)
+    if (mealType) {
+      body.append('meal_type', mealType)
+    }
+    const response = await fetch(`${AI_NUTRITION_BASE_URL}${ANALYZE_MEAL_PATH}`, {
+      method: 'POST',
+      headers: multipartAuthHeaders(),
+      body,
+    })
+    return parseJsonOrThrow<MealAnalysisResult>(response)
   },
 }
 

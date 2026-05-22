@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   llmPreferencesApi,
+  mealAnalysisApi,
   mealPlanApi,
   nutritionGoalsApi,
   nutritionMacrosApi,
@@ -187,6 +188,103 @@ describe('nutritionGoalsApi', () => {
   })
 })
 
+describe('mealAnalysisApi', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    seedAuthSession()
+    fetchSpy = vi.spyOn(globalThis, 'fetch')
+  })
+
+  afterEach(() => {
+    fetchSpy.mockRestore()
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+  })
+
+  const ANALYZE_URL = 'http://localhost:8001/api/v1/analyze-meal'
+
+  const ANALYZE_PAYLOAD = {
+    detected_foods: [
+      { name: 'Pizza margherita', confidence: 0.92 },
+      { name: 'Salade verte', confidence: 0.68 },
+    ],
+    macros: {
+      calories: 720,
+      protein_g: 28,
+      carbs_g: 82,
+      fat_g: 30,
+      fiber_g: 6,
+    },
+    insight: 'Pense à ajouter une portion de légumes verts pour booster les fibres.',
+    llm_backend_used: 'mistral',
+  }
+
+  function pngFile(name = 'meal.png', size = 1024): File {
+    return new File([new Uint8Array(size)], name, { type: 'image/png' })
+  }
+
+  it('POST /api/v1/analyze-meal en multipart avec bearer auth', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYZE_PAYLOAD))
+
+    const file = pngFile()
+    const result = await mealAnalysisApi.analyzeMeal(file)
+
+    const [calledUrl, init] = fetchSpy.mock.calls[0] as [string, RequestInit]
+    expect(calledUrl).toBe(ANALYZE_URL)
+    expect(init.method).toBe('POST')
+    const headers = init.headers as Record<string, string>
+    expect(headers.Authorization).toBe('Bearer jwt-test-token')
+    expect(headers['Content-Type']).toBeUndefined()
+    expect(init.body).toBeInstanceOf(FormData)
+    const body = init.body as FormData
+    expect(body.get('file')).toBeInstanceOf(File)
+    expect((body.get('file') as File).name).toBe('meal.png')
+    expect(result).toEqual(ANALYZE_PAYLOAD)
+  })
+
+  it('ajoute meal_type dans le FormData quand fourni', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYZE_PAYLOAD))
+
+    await mealAnalysisApi.analyzeMeal(pngFile(), 'lunch')
+
+    const init = fetchSpy.mock.calls[0]![1] as RequestInit
+    const body = init.body as FormData
+    expect(body.get('meal_type')).toBe('lunch')
+  })
+
+  it('omet meal_type du FormData quand non fourni', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYZE_PAYLOAD))
+
+    await mealAnalysisApi.analyzeMeal(pngFile())
+
+    const init = fetchSpy.mock.calls[0]![1] as RequestInit
+    const body = init.body as FormData
+    expect(body.has('meal_type')).toBe(false)
+  })
+
+  it('lance ApiError avec retryAfter sur 429', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '45' },
+      }),
+    )
+
+    await expect(mealAnalysisApi.analyzeMeal(pngFile())).rejects.toMatchObject({
+      status: 429,
+      retryAfter: 45,
+    })
+  })
+
+  it('propage une erreur 5xx en ApiError', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
+
+    await expect(mealAnalysisApi.analyzeMeal(pngFile())).rejects.toMatchObject({
+      status: 502,
+    })
+  })
+})
+
 describe('nutritionMacrosApi', () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>
 
@@ -256,7 +354,7 @@ describe('mealPlanApi', () => {
 
   const SAMPLE_MEAL = {
     name: 'Porridge banane',
-    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9 },
+    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9, fiber_g: null },
     ingredients: ['flocons avoine', 'banane', 'lait'],
     budget_eur: 1.8,
     prep_time_min: 10,
