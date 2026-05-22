@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AIInsightCard from '@/components/ui/AIInsightCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -13,6 +12,7 @@ import { useMealAnalysisStore } from '@/stores/mealAnalysis'
 import type { MealType } from '@/services/aiNutritionApi'
 
 const COOLDOWN_SECONDS = 60
+const NETWORK_ERROR_STATUS = 0
 
 const MEAL_TYPE_OPTIONS: Array<{ value: MealType; label: string }> = [
   { value: 'breakfast', label: 'Petit-déjeuner' },
@@ -88,10 +88,15 @@ const errorMessage = computed(() => {
   const err = store.error
   if (!err) return null
   if (err.status === 429) return null
-  if (err.status === 0) return 'Le service AI Nutrition est indisponible. Réessaie dans un instant.'
-  if (err.status >= 500) return 'Le service AI Nutrition est indisponible. Réessaie dans un instant.'
+  if (err.status === NETWORK_ERROR_STATUS || err.status >= 500) {
+    return 'Le service AI Nutrition est indisponible. Réessaie dans un instant.'
+  }
   return `Impossible d'analyser ce repas (HTTP ${err.status}).`
 })
+
+const visibleDropzoneError = computed(() =>
+  errorMessage.value ? null : dropzoneError.value,
+)
 
 const showResult = computed(
   () => !!store.analysis && !store.loading && !store.error,
@@ -143,11 +148,11 @@ onBeforeUnmount(() => {
           />
 
           <p
-            v-if="dropzoneError"
+            v-if="visibleDropzoneError"
             data-testid="dropzone-error"
             class="error-banner"
             role="alert"
-          >{{ dropzoneError }}</p>
+          >{{ visibleDropzoneError }}</p>
 
           <p
             v-if="errorMessage"
@@ -197,11 +202,12 @@ onBeforeUnmount(() => {
             size="md"
             @click="onReset"
           >Nouvelle analyse</AppButton>
-          <RouterLink
-            to="/meal-history"
+          <span
             data-testid="history-link"
-            class="history-link"
-          >Voir l'historique →</RouterLink>
+            class="history-link history-link--disabled"
+            aria-disabled="true"
+            title="Historique disponible dans une prochaine étape"
+          >Historique · bientôt</span>
         </div>
       </div>
 
@@ -447,6 +453,16 @@ onBeforeUnmount(() => {
 .history-link:focus-visible {
   outline: 2px solid var(--c-acid-dark);
   outline-offset: 3px;
+}
+
+.history-link--disabled {
+  background: var(--c-cream-2);
+  color: var(--c-gray-600);
+  cursor: not-allowed;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 1024px) {

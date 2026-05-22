@@ -280,7 +280,7 @@ describe('MealAnalysisView', () => {
     wrapper.unmount()
   })
 
-  it('includes a link to the placeholder /meal-history route', async () => {
+  it('exposes a disabled history placeholder after a successful analysis', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
 
@@ -290,6 +290,7 @@ describe('MealAnalysisView', () => {
 
     const historyLink = wrapper.find('[data-testid="history-link"]')
     expect(historyLink.exists()).toBe(true)
+    expect(historyLink.attributes('aria-disabled')).toBe('true')
     wrapper.unmount()
   })
 })

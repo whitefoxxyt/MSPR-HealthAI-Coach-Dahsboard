@@ -3,6 +3,7 @@ import { ApiError, parseJsonOrThrow } from '@/services/apiError'
 
 const AI_NUTRITION_BASE_URL = import.meta.env.VITE_AI_NUTRITION_BASE_URL || 'http://localhost:8001'
 const PREFERENCES_PATH = '/api/v1/me/preferences'
+const ANALYZE_MEAL_PATH = '/api/v1/analyze-meal'
 
 export type LLMBackend = 'mistral' | 'ollama'
 
@@ -141,7 +142,7 @@ export const mealAnalysisApi = {
     if (mealType) {
       body.append('meal_type', mealType)
     }
-    const response = await fetch(`${AI_NUTRITION_BASE_URL}/api/v1/analyze-meal`, {
+    const response = await fetch(`${AI_NUTRITION_BASE_URL}${ANALYZE_MEAL_PATH}`, {
       method: 'POST',
       headers: multipartAuthHeaders(),
       body,
