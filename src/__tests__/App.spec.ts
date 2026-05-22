@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import App from '../App.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
+import UserLayout from '@/layouts/UserLayout.vue'
 
 const AUTH_STORAGE_KEY = 'healthai.auth.session'
 
@@ -10,10 +12,31 @@ function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/', component: { template: '<div>Auth page</div>' }, meta: { authPage: true } },
-      { path: '/dashboard', component: { template: '<div>Dashboard page</div>' } },
-      { path: '/data-cleaning', component: { template: '<div>Data cleaning page</div>' } },
-      { path: '/validation', component: { template: '<div>Validation page</div>' } },
+      {
+        path: '/login',
+        name: 'login',
+        component: { template: '<div data-testid="login">Connexion à VITAL</div>' },
+        meta: { authPage: true },
+      },
+      {
+        path: '/',
+        name: 'home',
+        component: {
+          components: { UserLayout },
+          template: '<UserLayout title="Accueil"><div data-testid="home">Home content</div></UserLayout>',
+        },
+      },
+      {
+        path: '/admin',
+        component: AdminLayout,
+        children: [
+          {
+            path: '',
+            name: 'admin-dashboard',
+            component: { template: '<div data-testid="admin-dashboard">Dashboard admin content</div>' },
+          },
+        ],
+      },
     ],
   })
 }
@@ -23,52 +46,41 @@ describe('App', () => {
     localStorage.removeItem(AUTH_STORAGE_KEY)
   })
 
-  it('cache le layout dashboard sur la page auth', async () => {
+  it('shows only the auth view on /login (no admin chrome)', async () => {
+    const router = createTestRouter()
+    await router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Connexion à VITAL')
+    expect(wrapper.text()).not.toContain('HealthAI Admin')
+    expect(wrapper.text()).not.toContain('Espace administration')
+  })
+
+  it('wraps admin routes in the AdminLayout (sidebar + brand visible)', async () => {
+    const router = createTestRouter()
+    await router.push('/admin')
+    await router.isReady()
+
+    const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Dashboard admin content')
+    expect(wrapper.text()).toContain('HealthAI')
+    expect(wrapper.text()).toContain('Espace administration')
+  })
+
+  it('wraps user routes in the UserLayout (VITAL brand visible)', async () => {
     const router = createTestRouter()
     await router.push('/')
     await router.isReady()
 
-    const wrapper = mount(App, {
-      global: {
-        plugins: [createPinia(), router],
-      },
-    })
+    const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
+    await flushPromises()
 
-    expect(wrapper.text()).toContain('Auth page')
-    expect(wrapper.text()).not.toContain('Dashboard')
-    expect(wrapper.text()).not.toContain('HealthAI Coach')
-  })
-
-  it('affiche le layout dashboard sur les pages internes', async () => {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        user: {
-          id: 'admin-1',
-          username: 'admin',
-          email: 'admin@healthai.test',
-          role: 'admin',
-        },
-        tokens: {
-          accessToken: 'access-token-test',
-          refreshToken: 'refresh-token-test',
-          expiresAt: '2099-01-01T00:00:00.000Z',
-        },
-      }),
-    )
-
-    const router = createTestRouter()
-    await router.push('/dashboard')
-    await router.isReady()
-
-    const wrapper = mount(App, {
-      global: {
-        plugins: [createPinia(), router],
-      },
-    })
-
-    expect(wrapper.text()).toContain('HealthAI Coach')
-    expect(wrapper.text()).toContain('Dashboard')
-    expect(wrapper.text()).toContain('Déconnexion')
+    expect(wrapper.text()).toContain('Home content')
+    expect(wrapper.text()).toContain('VITAL')
   })
 })

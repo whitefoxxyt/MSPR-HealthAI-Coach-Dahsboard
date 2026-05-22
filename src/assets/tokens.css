@@ -1,0 +1,167 @@
+/*
+ * VITAL — design tokens (MSPR 2)
+ * Inspiration: maquettes 03-maquettes/design-system.html
+ *
+ * Palette principale
+ *   --c-cream, --c-cream-2   : crème (fonds clairs UserLayout)
+ *   --c-acid, --c-acid-dark  : accent lime (CTA, focus, branding)
+ *   --c-onyx, --c-onyx-2     : noirs profonds (textes, AdminLayout)
+ *
+ * Neutres : --c-gray-100 → --c-gray-800
+ * Accents secondaires : --c-coral (alerte), --c-sky (info), --c-mint (succès)
+ *
+ * Typographies (self-hostées, woff2 dans /public/fonts/)
+ *   --font-display : Cormorant Garamond (editorial, hero, h1)
+ *   --font-body    : DM Sans (paragraphes, UI)
+ *   --font-mono    : Space Grotesk (chiffres, données, métriques)
+ *
+ * Spacing — base 4 px
+ *   --sp-xs 4 · --sp-sm 8 · --sp-md 16 · --sp-lg 24 · --sp-xl 40 · --sp-2xl 64
+ *
+ * Radius
+ *   --r-sm 8 · --r-md 12 · --r-lg 20 · --r-xl 28 · --r-pill 999
+ *
+ * Motion
+ *   --d-micro 120ms · --d-standard 240ms · --d-page 380ms
+ *   --ease-out-expo, --spring (rebond doux)
+ */
+
+/* -------- Fonts (latin subset, self-host) -------- */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-400-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('/fonts/cormorant-garamond-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* -------- Design tokens -------- */
+:root {
+  /* Palette */
+  --c-cream:        #F5F0EB;
+  --c-cream-2:      #EDE7D9;
+  --c-acid:         #C8FF47;
+  --c-acid-dark:    #9ED626;
+  --c-onyx:         #141414;
+  --c-onyx-2:       #1E1E1E;
+
+  --c-gray-100:     #F0EBE2;
+  --c-gray-200:     #DDD6C8;
+  --c-gray-400:     #9A9188;
+  --c-gray-600:     #5C564E;
+  --c-gray-800:     #2A2520;
+
+  --c-coral:        #FF6B4A;
+  --c-sky:          #6BE8FF;
+  --c-mint:         #4AFFB4;
+
+  /* Typo */
+  --font-display:   'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
+  --font-body:      'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:      'Space Grotesk', ui-monospace, 'SF Mono', monospace;
+
+  /* Spacing — base 4 px */
+  --sp-xs:          4px;
+  --sp-sm:          8px;
+  --sp-md:          16px;
+  --sp-lg:          24px;
+  --sp-xl:          40px;
+  --sp-2xl:         64px;
+
+  /* Radius */
+  --r-sm:           8px;
+  --r-md:           12px;
+  --r-lg:           20px;
+  --r-xl:           28px;
+  --r-pill:         999px;
+
+  /* Motion */
+  --d-micro:        120ms;
+  --d-standard:     240ms;
+  --d-page:         380ms;
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --spring:         cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Élévation (claire) */
+  --shadow-soft:    0 1px 2px rgba(20, 20, 20, 0.04), 0 4px 16px rgba(20, 20, 20, 0.06);
+  --shadow-lift:    0 4px 12px rgba(20, 20, 20, 0.08), 0 16px 40px rgba(20, 20, 20, 0.10);
+}

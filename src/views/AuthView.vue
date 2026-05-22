@@ -106,6 +106,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { isCurrentUserAdmin } from '@/utils/auth-role'
 
 type AuthMode = 'login' | 'register' | 'forgot'
 
@@ -153,7 +154,8 @@ async function submitLogin() {
   localError.value = null
   try {
     await authStore.login(loginForm.value.email, loginForm.value.password)
-    await router.push({ name: 'dashboard' })
+    const target = isCurrentUserAdmin() ? { name: 'admin-dashboard' } : { name: 'home' }
+    await router.push(target)
   } catch (e) {
     localError.value = e instanceof Error ? e.message : 'Erreur lors de la connexion'
   }
