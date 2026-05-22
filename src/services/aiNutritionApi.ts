@@ -95,6 +95,24 @@ export interface MealPlanRequest {
   budget_eur_per_day?: number | null
 }
 
+export interface MealPlanSummary {
+  id: string
+  created_at: string
+  health_goal: HealthGoal | null
+  diet_type: DietType | string
+  duration_days: number
+  total_budget_eur: number
+  llm_backend_used: LLMBackend
+  days: DayPlan[]
+}
+
+export interface MealPlanListResponse {
+  items: MealPlanSummary[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface MealAnalysisResult {
   detected_foods: DetectedFood[]
   macros: MealMacros
@@ -223,6 +241,21 @@ export const mealPlanApi = {
       signal: options.signal,
     })
     return parseJsonOrThrow<MealPlanResponse>(response)
+  },
+
+  async listMealPlans(limit: number, offset: number): Promise<MealPlanListResponse> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    })
+    const response = await fetch(
+      `${AI_NUTRITION_BASE_URL}/api/v1/meal-plans/me?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: authHeaders(),
+      },
+    )
+    return parseJsonOrThrow<MealPlanListResponse>(response)
   },
 }
 

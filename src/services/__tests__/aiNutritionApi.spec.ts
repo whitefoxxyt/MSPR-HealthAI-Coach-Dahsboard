@@ -513,4 +513,70 @@ describe('mealPlanApi', () => {
       }),
     ).rejects.toMatchObject({ status: 503 })
   })
+
+  describe('listMealPlans', () => {
+    const SAMPLE_SUMMARY = {
+      id: 'plan-1',
+      created_at: '2026-05-20T14:32:00Z',
+      health_goal: 'muscle_gain',
+      diet_type: 'omnivore',
+      duration_days: 3,
+      total_budget_eur: 36.0,
+      llm_backend_used: 'ollama',
+      days: SAMPLE_PLAN.days,
+    }
+
+    const SAMPLE_LIST = {
+      items: [SAMPLE_SUMMARY],
+      total: 1,
+      limit: 10,
+      offset: 0,
+    }
+
+    it('GETs /api/v1/meal-plans/me with bearer auth and limit/offset query params', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(SAMPLE_LIST))
+
+      const result = await mealPlanApi.listMealPlans(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8001/api/v1/meal-plans/me?limit=10&offset=0',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
+        }),
+      )
+      expect(result).toEqual(SAMPLE_LIST)
+    })
+
+    it('passes through arbitrary positive limit/offset values in the URL', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...SAMPLE_LIST, limit: 20, offset: 40 }))
+
+      await mealPlanApi.listMealPlans(20, 40)
+
+      const url = fetchSpy.mock.calls[0]![0] as string
+      expect(url).toBe('http://localhost:8001/api/v1/meal-plans/me?limit=20&offset=40')
+    })
+
+    it('throws ApiError with retryAfter on 429', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Too Many Requests', {
+          status: 429,
+          headers: { 'Retry-After': '12' },
+        }),
+      )
+
+      await expect(mealPlanApi.listMealPlans(10, 0)).rejects.toMatchObject({
+        status: 429,
+        retryAfter: 12,
+      })
+    })
+
+    it('throws ApiError on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
+
+      await expect(mealPlanApi.listMealPlans(10, 0)).rejects.toMatchObject({
+        status: 502,
+      })
+    })
+  })
 })
