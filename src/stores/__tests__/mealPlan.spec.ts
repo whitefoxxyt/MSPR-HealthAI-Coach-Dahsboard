@@ -223,4 +223,156 @@ describe('useMealPlanStore', () => {
     expect(store.error).toBeNull()
     expect(store.loading).toBe(false)
   })
+
+  describe('loadHistory', () => {
+    const SUMMARY_BASE = {
+      id: 'plan-1',
+      created_at: '2026-05-20T14:32:00Z',
+      health_goal: 'muscle_gain' as const,
+      diet_type: 'omnivore',
+      duration_days: 3,
+      total_budget_eur: 36.0,
+      llm_backend_used: 'ollama' as const,
+      days: SAMPLE_PLAN.days,
+    }
+
+    function summary(id: string) {
+      return { ...SUMMARY_BASE, id }
+    }
+
+    function listResponse(items: ReturnType<typeof summary>[], total: number, limit: number, offset: number) {
+      return { items, total, limit, offset }
+    }
+
+    it('initialises history with empty list and zero total', () => {
+      const store = useMealPlanStore()
+
+      expect(store.history).toEqual([])
+      expect(store.historyTotal).toBe(0)
+      expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBeNull()
+    })
+
+    it('GETs /api/v1/meal-plans/me with limit/offset and populates history + total', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a'), summary('b')], 5, 10, 0)),
+      )
+      const store = useMealPlanStore()
+
+      await store.loadHistory(10, 0)
+
+      const url = fetchSpy.mock.calls[0]![0] as string
+      expect(url).toBe('http://localhost:8001/api/v1/meal-plans/me?limit=10&offset=0')
+      expect(store.history.map((p) => p.id)).toEqual(['a', 'b'])
+      expect(store.historyTotal).toBe(5)
+      expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBeNull()
+    })
+
+    it('appends items when called with offset > 0 (Charger plus pagination)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a'), summary('b')], 4, 2, 0)),
+      )
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('c'), summary('d')], 4, 2, 2)),
+      )
+      const store = useMealPlanStore()
+
+      await store.loadHistory(2, 0)
+      await store.loadHistory(2, 2)
+
+      expect(store.history.map((p) => p.id)).toEqual(['a', 'b', 'c', 'd'])
+      expect(store.historyTotal).toBe(4)
+    })
+
+    it('replaces history when called with offset 0 again (fresh reload)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a'), summary('b')], 4, 2, 0)),
+      )
+      const store = useMealPlanStore()
+      await store.loadHistory(2, 0)
+      expect(store.history).toHaveLength(2)
+
+      // Advance time past TTL so the second call is not a cache hit.
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.now() + 31_000)
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('x')], 1, 2, 0)),
+      )
+
+      await store.loadHistory(2, 0)
+      vi.useRealTimers()
+
+      expect(store.history.map((p) => p.id)).toEqual(['x'])
+      expect(store.historyTotal).toBe(1)
+    })
+
+    it('skips the network call when called again with the same params within 30s (cache TTL)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a')], 1, 10, 0)),
+      )
+      const store = useMealPlanStore()
+
+      await store.loadHistory(10, 0)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      await store.loadHistory(10, 0)
+      await store.loadHistory(10, 0)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(store.history.map((p) => p.id)).toEqual(['a'])
+    })
+
+    it('fetches again after the 30s cache TTL expires', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a')], 1, 10, 0)),
+      )
+      const store = useMealPlanStore()
+      await store.loadHistory(10, 0)
+
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.now() + 31_000)
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('b')], 1, 10, 0)),
+      )
+
+      await store.loadHistory(10, 0)
+      vi.useRealTimers()
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(store.history.map((p) => p.id)).toEqual(['b'])
+    })
+
+    it('captures ApiError on 5xx and leaves history untouched', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a')], 1, 10, 0)),
+      )
+      const store = useMealPlanStore()
+      await store.loadHistory(10, 0)
+
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.now() + 31_000)
+      fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 503 }))
+
+      await store.loadHistory(10, 0)
+      vi.useRealTimers()
+
+      expect(store.historyError?.status).toBe(503)
+      expect(store.history.map((p) => p.id)).toEqual(['a'])
+      expect(store.historyLoading).toBe(false)
+    })
+
+    it('clears history loading flag on success', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        jsonResponse(listResponse([summary('a')], 1, 10, 0)),
+      )
+      const store = useMealPlanStore()
+
+      const promise = store.loadHistory(10, 0)
+      expect(store.historyLoading).toBe(true)
+
+      await promise
+      expect(store.historyLoading).toBe(false)
+    })
+  })
 })

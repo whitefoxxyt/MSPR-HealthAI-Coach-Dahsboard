@@ -314,13 +314,11 @@ onMounted(() => {
             >
               Nouveau plan
             </AppButton>
-            <button
-              type="button"
+            <RouterLink
+              to="/meal-plans"
               data-testid="meal-plan-history-link"
               class="meal-plan__history"
-              disabled
-              title="Disponible bientôt (slice S6)"
-            >Historique →</button>
+            >Historique →</RouterLink>
           </div>
         </footer>
       </section>
@@ -519,7 +517,6 @@ onMounted(() => {
   border: none;
   padding: 0;
   text-decoration: none;
-  cursor: not-allowed;
 }
 
 .meal-plan__history:hover {

@@ -70,6 +70,7 @@ function createTestRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/meal-plan', component: MealPlanView },
+      { path: '/meal-plans', name: 'meal-plan-history', component: { template: '<div />' } },
       { path: '/profil', name: 'profile', component: { template: '<div />' } },
       { path: '/', component: { template: '<div />' } },
     ],
@@ -355,7 +356,7 @@ describe('MealPlanView', () => {
       expect(wrapper.find('[data-testid="meal-plan-result"]').exists()).toBe(false)
     })
 
-    it('renders a "Historique" link placeholder on the result step', async () => {
+    it('renders an active "Historique" link to /meal-plans on the result step', async () => {
       mockFetchInOrder(fetchSpy, [
         () => jsonResponse(GOALS_PAYLOAD),
         () => jsonResponse(SAMPLE_PLAN),
@@ -366,9 +367,10 @@ describe('MealPlanView', () => {
       await wrapper.find('[data-testid="meal-plan-form"]').trigger('submit.prevent')
       await flushPromises()
 
-      const link = wrapper.find('[data-testid="meal-plan-history-link"]')
+      const link = wrapper.find('a[data-testid="meal-plan-history-link"]')
       expect(link.exists()).toBe(true)
       expect(link.text().toLowerCase()).toContain('historique')
+      expect(link.attributes('href')).toBe('/meal-plans')
     })
   })
 

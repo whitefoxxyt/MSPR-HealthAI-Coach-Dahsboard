@@ -10,6 +10,7 @@ import FitnessProgramView from '@/views/FitnessProgramView.vue'
 import HomeView from '@/views/HomeView.vue'
 import MealAnalysisView from '@/views/MealAnalysisView.vue'
 import MealPlanView from '@/views/MealPlanView.vue'
+import MealPlanHistoryView from '@/views/MealPlanHistoryView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ValidationView from '@/views/ValidationView.vue'
 import SettingsView from '@/views/user/SettingsView.vue'
@@ -85,6 +86,12 @@ const router = createRouter({
       name: 'meal-plan',
       component: MealPlanView,
       meta: { requireAuth: true, title: 'Plan repas — VITAL' },
+    },
+    {
+      path: '/meal-plans',
+      name: 'meal-plan-history',
+      component: MealPlanHistoryView,
+      meta: { requireAuth: true, title: 'Historique plans repas — VITAL' },
     },
     {
       path: '/parametres',
