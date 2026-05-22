@@ -131,6 +131,33 @@ Pour lancer les tests en mode watch :
 npm run test:unit -- --watch
 ```
 
+### Tests e2e
+
+Suite Cypress 14 sur les flux critiques (auth, guard admin, analyse repas, plan repas, programme fitness, sélecteur LLM). Tous les backends (`MSPR-AUTH`, `MSPR-AI-Nutrition`, `MSPR-Reco-Fitness`) sont mockés via `cy.intercept`, aucun service externe n'est requis.
+
+En mode interactif (dev) :
+
+```bash
+npm run dev          # terminal 1 — sert le front sur :5173
+npx cypress open     # terminal 2 — UI Cypress
+```
+
+> ⚠️ Pour le run interactif, la `baseUrl` est `http://localhost:4173`. Ajuste-la temporairement à `http://localhost:5173` dans `cypress.config.js` ou lance le preview build (`npm run build:test && npx vite preview --port 4173`).
+
+En mode CI / one-shot (build prod + preview + run headless) :
+
+```bash
+npm run test:e2e
+```
+
+Le script :
+1. construit l'app avec `vite build --mode test` (charge `.env.test` qui fixe `VITE_ADMIN_EMAILS=admin@healthai.local`),
+2. sert le bundle avec `vite preview --port 4173`,
+3. lance `cypress run` (Electron headless),
+4. coupe automatiquement le serveur en fin de suite.
+
+Les specs vivent dans `cypress/e2e/*.cy.ts`, les fixtures JSON et l'image de test sont dans `cypress/fixtures/`, et les commandes custom (`cy.seedSession('admin' | 'user')`) dans `cypress/support/commands.ts`.
+
 ### Vérification de types
 
 Vérifie les types TypeScript :
@@ -247,12 +274,12 @@ L'interface respecte les standards d'accessibilité RGAA niveau AA :
 
 ## 🧪 Tests
 
-Le projet inclut des tests unitaires pour :
+Le projet inclut deux niveaux de tests :
 
-- ✅ **Stores Pinia** : logique métier et gestion d'état
-- ✅ **Fonctions utilitaires** : formatage, traduction, validation
+- ✅ **Tests unitaires (Vitest)** : stores Pinia (logique métier, gestion d'état) et fonctions utilitaires (formatage, traduction, validation). Couverture > 80 % sur les stores et utils critiques.
+- ✅ **Tests e2e (Cypress 14)** : 6 specs couvrant les flux critiques (login + redirection par rôle, guard `/admin`, analyse repas, plan repas, programme fitness, sélecteur LLM). Tous les microservices sont mockés via `cy.intercept`.
 
-Couverture de test : > 80% sur les stores et utils critiques.
+Voir les sections [Tests unitaires](#tests-unitaires) et [Tests e2e](#tests-e2e) pour les commandes.
 
 ## 🎨 Design
 

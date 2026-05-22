@@ -65,9 +65,51 @@ jobs:
       - name: Tests unitaires
         run: npm run test:unit -- --run
 
+  e2e:
+    name: Tests e2e (Cypress)
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Cache binaire Cypress
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
+      - name: Installation du binaire Cypress
+        run: npx cypress install
+
+      - name: Build de l'application (mode test)
+        run: npm run build:test
+
+      - name: Tests e2e Cypress
+        run: npx start-server-and-test 'vite preview --port 4173' http://localhost:4173 'cypress run'
+
+      - name: Upload des screenshots Cypress en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
   publish:
     name: Publication de l'image Docker
-    needs: [lint, type-check, test]
+    needs: [lint, type-check, test, e2e]
     if: github.event_name == 'push'
     uses: ./.github/workflows/docker-publish.yml
     secrets: inherit

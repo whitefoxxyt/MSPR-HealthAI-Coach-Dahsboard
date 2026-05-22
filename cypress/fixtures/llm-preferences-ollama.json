@@ -1,0 +1,4 @@
+{
+  "preferred_llm": "ollama",
+  "effective_llm": "ollama"
+}

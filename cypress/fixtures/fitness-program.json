@@ -1,0 +1,42 @@
+{
+  "program_id": "cy-program-id",
+  "user_id": "cypress-user",
+  "duration_weeks": 1,
+  "scoring_strategy": "rule_based",
+  "tier_at_generation": "free",
+  "health_goal_at_generation": "muscle_strength",
+  "duration_min_per_session": 45,
+  "created_at": "2026-05-22T10:05:00Z",
+  "weeks": [
+    [
+      [
+        {
+          "id": 101,
+          "name": "Developpe couche haltere",
+          "target_muscles": ["pectoraux", "triceps"],
+          "equipment": ["dumbbells", "bench"],
+          "difficulty": "intermediate",
+          "category": "force"
+        },
+        {
+          "id": 102,
+          "name": "Rowing haltere",
+          "target_muscles": ["dorsaux", "biceps"],
+          "equipment": ["dumbbells"],
+          "difficulty": "intermediate",
+          "category": "force"
+        }
+      ],
+      [
+        {
+          "id": 201,
+          "name": "Squat goblet",
+          "target_muscles": ["quadriceps", "fessiers"],
+          "equipment": ["dumbbells"],
+          "difficulty": "intermediate",
+          "category": "force"
+        }
+      ]
+    ]
+  ]
+}

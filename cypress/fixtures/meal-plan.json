@@ -1,0 +1,54 @@
+{
+  "days": [
+    {
+      "day": 1,
+      "breakfast": {
+        "name": "Porridge avoine et fruits rouges",
+        "macros": { "calories": 420, "protein_g": 18, "carbs_g": 58, "fat_g": 12, "fiber_g": 9 },
+        "ingredients": ["Flocons d'avoine", "Lait demi-ecreme", "Framboises", "Miel"],
+        "budget_eur": 2.10,
+        "prep_time_min": 10
+      },
+      "lunch": {
+        "name": "Bowl quinoa poulet roti",
+        "macros": { "calories": 650, "protein_g": 42, "carbs_g": 70, "fat_g": 18, "fiber_g": 8 },
+        "ingredients": ["Quinoa", "Filet de poulet", "Avocat", "Tomates cerises"],
+        "budget_eur": 5.20,
+        "prep_time_min": 25
+      },
+      "dinner": {
+        "name": "Saumon roti et legumes",
+        "macros": { "calories": 580, "protein_g": 38, "carbs_g": 40, "fat_g": 24, "fiber_g": 7 },
+        "ingredients": ["Pave de saumon", "Patate douce", "Brocolis", "Citron"],
+        "budget_eur": 6.80,
+        "prep_time_min": 30
+      }
+    },
+    {
+      "day": 2,
+      "breakfast": {
+        "name": "Toasts avocat et oeufs poches",
+        "macros": { "calories": 460, "protein_g": 22, "carbs_g": 38, "fat_g": 22, "fiber_g": 8 },
+        "ingredients": ["Pain complet", "Avocat", "Oeufs", "Piment d'Espelette"],
+        "budget_eur": 2.90,
+        "prep_time_min": 15
+      },
+      "lunch": {
+        "name": "Salade pates feta epinards",
+        "macros": { "calories": 620, "protein_g": 28, "carbs_g": 80, "fat_g": 18, "fiber_g": 9 },
+        "ingredients": ["Penne complet", "Feta", "Epinards", "Olives"],
+        "budget_eur": 4.10,
+        "prep_time_min": 20
+      },
+      "dinner": {
+        "name": "Curry de lentilles corail",
+        "macros": { "calories": 540, "protein_g": 24, "carbs_g": 78, "fat_g": 14, "fiber_g": 12 },
+        "ingredients": ["Lentilles corail", "Lait coco", "Tomates", "Curry"],
+        "budget_eur": 3.40,
+        "prep_time_min": 30
+      }
+    }
+  ],
+  "llm_backend_used": "mistral",
+  "total_budget_eur": 24.50
+}

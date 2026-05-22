@@ -1,0 +1,10 @@
+{
+  "user_id": "cypress-user",
+  "health_goal": "balance",
+  "calories_target": 2200,
+  "protein_g": "120",
+  "carbs_g": "260",
+  "fat_g": "70",
+  "allergies": [],
+  "diet_type": "omnivore"
+}

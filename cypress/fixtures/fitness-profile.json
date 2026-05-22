@@ -1,0 +1,12 @@
+{
+  "user_id": "cypress-user",
+  "health_goal_fitness": "muscle_strength",
+  "experience_level": "intermediate",
+  "equipment": ["dumbbells", "bench"],
+  "limitations": [],
+  "preferences": {
+    "duration_min_per_session": 45,
+    "sessions_per_week": 3
+  },
+  "updated_at": "2026-05-22T10:00:00Z"
+}

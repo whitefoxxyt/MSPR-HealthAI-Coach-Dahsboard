@@ -1,0 +1,8 @@
+{
+  "user": {
+    "id": "cy-admin-id",
+    "name": "Cypress Admin",
+    "email": "admin@healthai.local"
+  },
+  "token": "session-token-admin"
+}

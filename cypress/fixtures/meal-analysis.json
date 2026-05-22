@@ -1,0 +1,16 @@
+{
+  "detected_foods": [
+    { "name": "Saumon grille", "confidence": 0.92 },
+    { "name": "Riz basmati", "confidence": 0.88 },
+    { "name": "Brocolis vapeur", "confidence": 0.81 }
+  ],
+  "macros": {
+    "calories": 615,
+    "protein_g": 38,
+    "carbs_g": 54,
+    "fat_g": 22,
+    "fiber_g": 6
+  },
+  "insight": "Bonne assiette equilibree : la portion de proteines couvre tes besoins post-entrainement.",
+  "llm_backend_used": "mistral"
+}
