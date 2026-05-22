@@ -45,6 +45,8 @@ Cypress.Commands.add('seedSession', (role: AuthRole) => {
       : (Cypress.env('USER_EMAIL') as string)
   const id = role === 'admin' ? 'cypress-admin' : 'cypress-user'
 
+  // Le champ `role` est requis par le type AuthSession et n'accepte que 'admin'.
+  // Le gating admin se fait via l'email du JWT (cf. utils/auth-role.ts), pas ce champ.
   const session = {
     user: {
       id,
@@ -63,5 +65,3 @@ Cypress.Commands.add('seedSession', (role: AuthRole) => {
     win.localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
   })
 })
-
-
