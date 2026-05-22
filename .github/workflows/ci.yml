@@ -8,8 +8,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Type-check, lint et tests unitaires
+  lint:
+    name: Lint (oxlint + eslint)
     runs-on: ubuntu-latest
     steps:
       - name: Récupération du code
@@ -24,18 +24,50 @@ jobs:
       - name: Installation des dépendances
         run: npm ci
 
-      - name: Vérification des types (vue-tsc)
-        run: npm run type-check
-
-      - name: Lint (oxlint + eslint)
+      - name: Lint
         run: npm run lint
 
-      - name: Tests unitaires (Vitest)
+  type-check:
+    name: Vérification des types (vue-tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+  test:
+    name: Tests unitaires (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Tests unitaires
         run: npm run test:unit -- --run
 
   publish:
     name: Publication de l'image Docker
-    needs: [test]
+    needs: [lint, type-check, test]
     if: github.event_name == 'push'
     uses: ./.github/workflows/docker-publish.yml
     secrets: inherit
