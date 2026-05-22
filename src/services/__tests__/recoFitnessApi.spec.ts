@@ -157,6 +157,144 @@ describe('recoFitnessApi', () => {
     })
   })
 
+  describe('sendProgramFeedback', () => {
+    const FEEDBACK_RESPONSE = {
+      user_id: 'user-1',
+      program_id: 'prog-abc-123',
+      feedback_score: 4,
+      completed: true,
+      comment: 'Bon programme',
+      exercise_id: null,
+      created_at: '2026-05-22T13:00:00Z',
+    }
+
+    it('issues PUT /api/v1/programs/{programId}/feedback with the body serialised and bearer auth', async () => {
+      const body = {
+        score: 4,
+        completed: true,
+        comment: 'Bon programme',
+        exercise_id: null,
+      }
+      fetchSpy.mockResolvedValueOnce(jsonResponse(FEEDBACK_RESPONSE))
+
+      const result = await recoFitnessApi.sendProgramFeedback('prog-abc-123', body)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/programs/prog-abc-123/feedback',
+        expect.objectContaining({
+          method: 'PUT',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer jwt-test-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify(body),
+        }),
+      )
+      expect(result).toEqual(FEEDBACK_RESPONSE)
+    })
+
+    it('throws ApiError with status 429 and retryAfter on rate limit', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Too Many Requests', {
+          status: 429,
+          headers: { 'Retry-After': '15' },
+        }),
+      )
+
+      await expect(
+        recoFitnessApi.sendProgramFeedback('prog-abc-123', {
+          score: 4,
+          completed: true,
+          comment: null,
+          exercise_id: null,
+        }),
+      ).rejects.toMatchObject({ status: 429, retryAfter: 15 })
+    })
+
+    it('throws ApiError with status code on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }))
+
+      await expect(
+        recoFitnessApi.sendProgramFeedback('prog-abc-123', {
+          score: 3,
+          completed: false,
+          comment: null,
+          exercise_id: null,
+        }),
+      ).rejects.toMatchObject({ status: 502 })
+    })
+
+    it('properly encodes a program_id containing reserved URL characters', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(FEEDBACK_RESPONSE))
+
+      await recoFitnessApi.sendProgramFeedback('prog/with space', {
+        score: 5,
+        completed: true,
+        comment: null,
+        exercise_id: null,
+      })
+
+      const [url] = fetchSpy.mock.calls[0]!
+      expect(url).toBe(
+        'http://localhost:8002/api/v1/programs/prog%2Fwith%20space/feedback',
+      )
+    })
+  })
+
+  describe('listFeedback', () => {
+    const PAGE = {
+      items: [
+        {
+          program_id: 'prog-abc-123',
+          user_id: 'user-1',
+          feedback_score: 4,
+          created_at: '2026-05-22T13:00:00Z',
+        },
+        {
+          program_id: 'prog-def-456',
+          user_id: 'user-1',
+          feedback_score: 5,
+          created_at: '2026-05-21T09:15:00Z',
+        },
+      ],
+      total: 2,
+      limit: 20,
+      offset: 0,
+    }
+
+    it('issues GET /api/v1/feedback/me with default limit/offset query params and bearer auth', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse(PAGE))
+
+      const result = await recoFitnessApi.listFeedback()
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/feedback/me?limit=20&offset=0',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
+        }),
+      )
+      expect(result).toEqual(PAGE)
+    })
+
+    it('forwards custom limit and offset', async () => {
+      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...PAGE, limit: 5, offset: 10 }))
+
+      await recoFitnessApi.listFeedback(5, 10)
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8002/api/v1/feedback/me?limit=5&offset=10',
+        expect.objectContaining({ method: 'GET' }),
+      )
+    })
+
+    it('throws ApiError with status code on 5xx', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('Server Error', { status: 503 }))
+
+      await expect(recoFitnessApi.listFeedback()).rejects.toMatchObject({ status: 503 })
+    })
+  })
+
   describe('listPrograms', () => {
     const HISTORY_PAYLOAD = {
       items: [
