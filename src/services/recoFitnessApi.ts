@@ -60,6 +60,37 @@ export interface WorkoutProgram {
   created_at: string
 }
 
+export interface ProgramFeedbackBody {
+  score: number
+  completed: boolean
+  comment: string | null
+  exercise_id: number | null
+}
+
+export interface ProgramFeedbackResponse {
+  user_id: string
+  program_id: string
+  feedback_score: number
+  completed: boolean
+  comment: string | null
+  exercise_id: number | null
+  created_at: string
+}
+
+export interface FeedbackItem {
+  program_id: string
+  user_id: string
+  feedback_score: number
+  created_at: string
+}
+
+export interface PaginatedFeedback {
+  items: FeedbackItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
 function authHeaders(): Record<string, string> {
   const token = authSessionManager.getAccessToken()
   return {
@@ -96,6 +127,33 @@ export const recoFitnessApi = {
       body: JSON.stringify({}),
     })
     return parseJsonOrThrow<WorkoutProgram>(response)
+  },
+
+  async sendProgramFeedback(
+    programId: string,
+    body: ProgramFeedbackBody,
+  ): Promise<ProgramFeedbackResponse> {
+    const response = await fetch(
+      `${RECO_FITNESS_BASE_URL}/api/v1/programs/${encodeURIComponent(programId)}/feedback`,
+      {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      },
+    )
+    return parseJsonOrThrow<ProgramFeedbackResponse>(response)
+  },
+
+  async listFeedback(limit = 20, offset = 0): Promise<PaginatedFeedback> {
+    const query = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+    const response = await fetch(
+      `${RECO_FITNESS_BASE_URL}/api/v1/feedback/me?${query.toString()}`,
+      {
+        method: 'GET',
+        headers: authHeaders(),
+      },
+    )
+    return parseJsonOrThrow<PaginatedFeedback>(response)
   },
 }
 

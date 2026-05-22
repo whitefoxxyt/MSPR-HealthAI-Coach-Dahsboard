@@ -80,6 +80,7 @@ async function mountView() {
   await router.isReady()
   return mount(FitnessProgramView, {
     global: { plugins: [createPinia(), router] },
+    attachTo: document.body,
   })
 }
 
@@ -273,7 +274,7 @@ describe('FitnessProgramView', () => {
     expect(newCta.text()).toMatch(/nouveau programme/i)
   })
 
-  it('renders placeholder links to history and feedback (S8/S9 follow-ups)', async () => {
+  it('renders a placeholder link to history (S8 follow-up) and an active feedback CTA', async () => {
     mockFetchInOrder(fetchSpy, [
       () => jsonResponse(FITNESS_PROFILE),
       () => jsonResponse(PROGRAM),
@@ -285,6 +286,135 @@ describe('FitnessProgramView', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="program-history-link"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="program-feedback-link"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="program-feedback-cta"]').exists()).toBe(true)
+  })
+
+  describe('feedback flow', () => {
+    async function generateThenOpenFeedback() {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(FITNESS_PROFILE),
+        () => jsonResponse(PROGRAM),
+      ])
+      const wrapper = await mountView()
+      await flushPromises()
+      await wrapper.find('[data-testid="generate-program-cta"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.find('[data-testid="program-feedback-cta"]').trigger('click')
+      await flushPromises()
+
+      return wrapper
+    }
+
+    it('opens the feedback modal when the CTA is clicked', async () => {
+      const wrapper = await generateThenOpenFeedback()
+
+      expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="feedback-rating-1"]').exists()).toBe(true)
+    })
+
+    it('submitting the form PUTs to /api/v1/programs/{programId}/feedback and shows a confirmation banner', async () => {
+      const FEEDBACK_OK = {
+        user_id: 'user-1',
+        program_id: 'prog-abc-123',
+        feedback_score: 4,
+        completed: true,
+        comment: null,
+        exercise_id: null,
+        created_at: '2026-05-22T13:00:00Z',
+      }
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(FITNESS_PROFILE),
+        () => jsonResponse(PROGRAM),
+        () => jsonResponse(FEEDBACK_OK),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+      await wrapper.find('[data-testid="generate-program-cta"]').trigger('click')
+      await flushPromises()
+      await wrapper.find('[data-testid="program-feedback-cta"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.find('[data-testid="feedback-rating-4"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-completed"]').setValue(true)
+      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await flushPromises()
+
+      const putCall = fetchSpy.mock.calls.find(
+        (args: unknown[]) =>
+          args[0] === 'http://localhost:8002/api/v1/programs/prog-abc-123/feedback'
+          && (args[1] as RequestInit)?.method === 'PUT',
+      )
+      expect(putCall).toBeDefined()
+      expect((putCall![1] as RequestInit).body).toBe(
+        JSON.stringify({ score: 4, completed: true, comment: null, exercise_id: null }),
+      )
+
+      expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false)
+      const success = wrapper.find('[data-testid="feedback-success"]')
+      expect(success.exists()).toBe(true)
+      expect(success.text()).toMatch(/merci|envoy/i)
+    })
+
+    it('shows the rate-limit banner inside the modal on 429', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(FITNESS_PROFILE),
+        () => jsonResponse(PROGRAM),
+        () => new Response('Too Many Requests', {
+          status: 429,
+          headers: { 'Retry-After': '18' },
+        }),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+      await wrapper.find('[data-testid="generate-program-cta"]').trigger('click')
+      await flushPromises()
+      await wrapper.find('[data-testid="program-feedback-cta"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.find('[data-testid="feedback-rating-3"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await flushPromises()
+
+      const banner = wrapper.find('[data-testid="feedback-rate-limit"]')
+      expect(banner.exists()).toBe(true)
+      expect(banner.text()).toContain('18')
+    })
+
+    it('shows an error banner inside the modal on 5xx', async () => {
+      mockFetchInOrder(fetchSpy, [
+        () => jsonResponse(FITNESS_PROFILE),
+        () => jsonResponse(PROGRAM),
+        () => new Response('Server Error', { status: 503 }),
+      ])
+
+      const wrapper = await mountView()
+      await flushPromises()
+      await wrapper.find('[data-testid="generate-program-cta"]').trigger('click')
+      await flushPromises()
+      await wrapper.find('[data-testid="program-feedback-cta"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.find('[data-testid="feedback-rating-2"]').trigger('click')
+      await wrapper.find('[data-testid="feedback-submit"]').trigger('click')
+      await flushPromises()
+
+      const banner = wrapper.find('[data-testid="feedback-error"]')
+      expect(banner.exists()).toBe(true)
+      expect(banner.text()).toMatch(/erreur|impossible|indisponible/i)
+    })
+
+    it('cancel button closes the modal without submitting', async () => {
+      const wrapper = await generateThenOpenFeedback()
+
+      const callsBefore = fetchSpy.mock.calls.length
+      await wrapper.find('[data-testid="feedback-cancel"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="feedback-modal"]').exists()).toBe(false)
+      expect(fetchSpy.mock.calls.length).toBe(callsBefore)
+    })
   })
 })
