@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import UserLayout from '@/layouts/UserLayout.vue'
 import AIInsightCard from '@/components/ui/AIInsightCard.vue'
@@ -16,6 +16,8 @@ const NETWORK_ERROR_STATUS = 0
 const store = useMealAnalysisStore()
 const selected = ref<MealAnalysisHistoryItem | null>(null)
 const showSkeleton = ref(false)
+const panelRef = ref<HTMLElement | null>(null)
+const previouslyFocused = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   showSkeleton.value = store.history.length === 0
@@ -28,6 +30,16 @@ watch(
     if (!next) showSkeleton.value = false
   },
 )
+
+watch(selected, async (next) => {
+  if (next) {
+    await nextTick()
+    panelRef.value?.focus()
+  } else if (previouslyFocused.value) {
+    previouslyFocused.value.focus()
+    previouslyFocused.value = null
+  }
+})
 
 const initialLoading = computed(
   () => showSkeleton.value && store.historyLoading && store.history.length === 0,
@@ -73,6 +85,7 @@ function extraFoodsCount(item: MealAnalysisHistoryItem): number {
 }
 
 function openDetail(item: MealAnalysisHistoryItem) {
+  previouslyFocused.value = document.activeElement as HTMLElement | null
   selected.value = item
   document.body.style.overflow = 'hidden'
 }
@@ -210,7 +223,7 @@ onBeforeUnmount(() => {
           aria-labelledby="detail-title"
           @click.self="closeDetail"
         >
-          <div class="detail-panel" tabindex="-1">
+          <div ref="panelRef" class="detail-panel" tabindex="-1">
             <header class="detail-head">
               <div>
                 <p class="detail-eyebrow">{{ formatDate(selected.created_at) }}</p>
