@@ -176,7 +176,7 @@ describe('services/api', () => {
     it('exportData: POST /export avec options sérialisées et Authorization', async () => {
       seedSession()
       const blob = new Blob(['hello'], { type: 'text/plain' })
-      fetchSpy.mockResolvedValue(new Response(blob, { status: 200 }))
+      fetchSpy.mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(blob) } as unknown as Response)
 
       const result = await exportApi.exportData({
         format: 'csv',
@@ -196,7 +196,7 @@ describe('services/api', () => {
     })
 
     it('exportData: sans Authorization si pas de session', async () => {
-      fetchSpy.mockResolvedValue(new Response(new Blob(), { status: 200 }))
+      fetchSpy.mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(new Blob()) } as unknown as Response)
       await exportApi.exportData({ format: 'json', includeMetadata: false })
       const headers = (fetchSpy.mock.calls[0]![1] as RequestInit).headers as Record<string, string>
       expect(headers.Authorization).toBeUndefined()

@@ -440,7 +440,7 @@ function totalSessions(program: ProgramExportInput): number {
 }
 
 function totalDurationMinutes(program: ProgramExportInput): number {
-  return totalSessions(program) * program.duration_min_per_session
+  return totalSessions(program) * (program.duration_min_per_session ?? 0)
 }
 
 const PROGRAM_EXTRA_STYLES = `
@@ -476,7 +476,7 @@ function programMetaBlock(program: ProgramExportInput): string {
   const totalMinutes = totalDurationMinutes(program)
   return `
     <div class="doc-stats">
-      <div class="doc-stat"><div class="doc-stat-label">Objectif</div><div class="doc-stat-value">${escapeHtml(FITNESS_GOAL_LABELS[program.health_goal_at_generation] ?? program.health_goal_at_generation)}</div></div>
+      <div class="doc-stat"><div class="doc-stat-label">Objectif</div><div class="doc-stat-value">${escapeHtml(program.health_goal_at_generation ? (FITNESS_GOAL_LABELS[program.health_goal_at_generation] ?? program.health_goal_at_generation) : '-')}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Semaines</div><div class="doc-stat-value">${escapeHtml(program.duration_weeks)}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Séances</div><div class="doc-stat-value">${escapeHtml(totalSessions(program))}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Durée séance</div><div class="doc-stat-value">${escapeHtml(program.duration_min_per_session)} min</div></div>

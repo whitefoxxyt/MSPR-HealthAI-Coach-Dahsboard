@@ -105,7 +105,7 @@ describe('services/auth — authApi.login', () => {
   })
 
   it('appelle /sign-in/email puis /jwt et construit une session admin', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/sign-in/email')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u-1', name: 'Arthur', email: 'a@b.c' }, token: 't' }))
       }
@@ -124,7 +124,7 @@ describe('services/auth — authApi.login', () => {
     expect(session.tokens.accessToken).toBe('jwt-from-server')
     expect(session.tokens.refreshToken).toBe('t')
 
-    const signInCall = fetchSpy.mock.calls.find((args) => String(args[0]).includes('/sign-in/email'))!
+    const signInCall = fetchSpy.mock.calls.find((args: [RequestInfo | URL, RequestInit?]) => String(args[0]).includes('/sign-in/email'))!
     expect(signInCall[0]).toBe(`${AUTH_BASE_URL}/api/auth/sign-in/email`)
     expect((signInCall[1] as RequestInit).method).toBe('POST')
     expect((signInCall[1] as RequestInit).credentials).toBe('include')
@@ -132,7 +132,7 @@ describe('services/auth — authApi.login', () => {
   })
 
   it('fallback sur user.id comme refreshToken si pas de token retourné', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/sign-in/email')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u-42', email: 'x@y.z' } }))
       }
@@ -158,7 +158,7 @@ describe('services/auth — authApi.login', () => {
   })
 
   it('lève une erreur si /jwt n est pas ok', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/sign-in/email')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u', email: 'a@b.c' }, token: 't' }))
       }
@@ -168,7 +168,7 @@ describe('services/auth — authApi.login', () => {
   })
 
   it('lève une erreur si la réponse /jwt n a pas de token', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/sign-in/email')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u', email: 'a@b.c' }, token: 't' }))
       }
@@ -325,7 +325,7 @@ describe('services/auth — tryBootstrapFromCookie', () => {
   })
 
   it('retourne une session valide après fetch JWT', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/api/session')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u-1', name: 'Arthur', email: 'a@b.c' } }))
       }
@@ -349,7 +349,7 @@ describe('services/auth — tryBootstrapFromCookie', () => {
   })
 
   it('retourne null si /api/jwt échoue', async () => {
-    fetchSpy.mockImplementation((url) => {
+    fetchSpy.mockImplementation((url: RequestInfo | URL) => {
       if (String(url).includes('/api/session')) {
         return Promise.resolve(jsonResponse({ user: { id: 'u-1', email: 'a@b.c' } }))
       }

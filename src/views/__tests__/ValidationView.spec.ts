@@ -207,7 +207,7 @@ describe('ValidationView', () => {
 
     const textarea = card.find('textarea.data-textarea')
     expect(textarea.exists()).toBe(true)
-    expect(textarea.element.value).toContain('protein_g')
+    expect((textarea.element as HTMLTextAreaElement).value).toContain('protein_g')
   })
 
   it('saveEdit avec JSON valide appelle updateRecord', async () => {

@@ -92,7 +92,7 @@ describe('Validation Store', () => {
     store.statusFilter = 'all'
     await store.fetchRecords()
 
-    const params = spy.mock.calls[0]![0] as Record<string, unknown>
+    const params = spy.mock.calls[0]![0] as unknown as Record<string, unknown>
     expect(params.status).toBeUndefined()
   })
 
