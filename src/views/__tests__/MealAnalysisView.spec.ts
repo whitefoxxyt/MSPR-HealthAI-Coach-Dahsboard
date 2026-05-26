@@ -31,6 +31,15 @@ function imageFile(name = 'meal.png', sizeBytes = 1024, type = 'image/png'): Fil
   return new File([new Uint8Array(sizeBytes)], name, { type })
 }
 
+// Reponse "macros pretes" : profile_completion_required=false debloque le
+// composant pour rendre le bouton Analyser. Consomme par fetchMacros au mount.
+const MACROS_READY = {
+  profile_completion_required: false,
+  missing_fields: [] as string[],
+  tdee: 2400,
+  macros: { calories: 2400, protein_g: 120, carbs_g: 280, fat_g: 80 },
+}
+
 const ANALYSIS_PAYLOAD = {
   detected_foods: [
     { name: 'Pizza margherita', confidence: 0.92 },
@@ -58,7 +67,14 @@ function createTestRouter() {
   })
 }
 
-async function mountView() {
+async function mountView(opts?: { skipMacrosMock?: boolean }) {
+  // Le composant fetch /me/macros au mount via nutritionGoalsStore.fetchMacros().
+  // Sans mock, fetch est rejete et le composant rend un EmptyState
+  // (needsProfile=true) qui n'expose pas le bouton "Analyser". On preempte donc
+  // un mock "profile complet" pour debloquer les tests qui cliquent sur Analyser.
+  if (!opts?.skipMacrosMock) {
+    fetchSpyRef?.mockResolvedValueOnce(jsonResponse(MACROS_READY))
+  }
   const router = createTestRouter()
   await router.push('/meal-analysis')
   await router.isReady()
@@ -68,6 +84,8 @@ async function mountView() {
   })
 }
 
+let fetchSpyRef: ReturnType<typeof vi.spyOn> | null = null
+
 describe('MealAnalysisView', () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>
 
@@ -75,6 +93,7 @@ describe('MealAnalysisView', () => {
     setActivePinia(createPinia())
     seedAuthSession()
     fetchSpy = vi.spyOn(globalThis, 'fetch')
+    fetchSpyRef = fetchSpy
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fake-url')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   })
@@ -125,8 +144,8 @@ describe('MealAnalysisView', () => {
   })
 
   it('clicking "Analyser" POSTs the file with the selected meal_type', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="meal-type-select"] select').setValue('dinner')
@@ -137,15 +156,18 @@ describe('MealAnalysisView', () => {
       'http://localhost:8001/api/v1/analyze-meal',
       expect.objectContaining({ method: 'POST' }),
     )
-    const init = fetchSpy.mock.calls[0]![1] as RequestInit
-    const body = init.body as FormData
+    const analyzeCall = fetchSpy.mock.calls.find(
+      (c: unknown[]) => typeof c[0] === 'string' && c[0].includes('/analyze-meal'),
+    )
+    expect(analyzeCall).toBeDefined()
+    const body = (analyzeCall![1] as RequestInit).body as FormData
     expect(body.get('meal_type')).toBe('dinner')
     wrapper.unmount()
   })
 
   it('renders the result section after a successful analysis', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -163,8 +185,8 @@ describe('MealAnalysisView', () => {
   })
 
   it('renders detected foods with their confidence as a percentage', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -177,11 +199,11 @@ describe('MealAnalysisView', () => {
   })
 
   it('shows a loading skeleton while the request is in flight', async () => {
+    const wrapper = await mountView()
     let resolveFetch: (response: Response) => void = () => {}
     fetchSpy.mockImplementationOnce(
       () => new Promise<Response>((resolve) => { resolveFetch = resolve })
     )
-    const wrapper = await mountView()
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -197,8 +219,8 @@ describe('MealAnalysisView', () => {
   })
 
   it('"Nouvelle analyse" returns to the dropzone state', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -212,10 +234,10 @@ describe('MealAnalysisView', () => {
   })
 
   it('shows the rate-limit banner with the retryAfter value on 429', async () => {
+    const wrapper = await mountView()
     fetchSpy.mockResolvedValueOnce(
       new Response('Too Many Requests', { status: 429, headers: { 'Retry-After': '25' } }),
     )
-    const wrapper = await mountView()
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -228,8 +250,8 @@ describe('MealAnalysisView', () => {
   })
 
   it('shows an error message when the service is down (5xx)', async () => {
-    fetchSpy.mockResolvedValueOnce(new Response('Service Unavailable', { status: 503 }))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(new Response('Service Unavailable', { status: 503 }))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -243,8 +265,8 @@ describe('MealAnalysisView', () => {
 
   it('disables the "Analyser" button for 60 seconds after submitting', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')
@@ -282,8 +304,8 @@ describe('MealAnalysisView', () => {
   })
 
   it('exposes a real link to the history view after a successful analysis', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
     const wrapper = await mountView()
+    fetchSpy.mockResolvedValueOnce(jsonResponse(ANALYSIS_PAYLOAD))
 
     await pickFile(wrapper, imageFile())
     await wrapper.find('[data-testid="analyze-button"]').trigger('click')

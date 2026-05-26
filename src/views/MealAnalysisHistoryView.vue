@@ -79,7 +79,7 @@ function formatDate(iso: string): string {
 }
 
 function previewFoods(item: MealAnalysisHistoryItem): string[] {
-  return item.detected_foods.slice(0, PREVIEW_FOODS).map((f) => f.name)
+  return item.detected_foods.slice(0, PREVIEW_FOODS).map((f) => f.name ?? f.label ?? '')
 }
 
 function extraFoodsCount(item: MealAnalysisHistoryItem): number {
@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
               >+{{ extraFoodsCount(item) }}</li>
             </ul>
             <p class="history-card__kcal">
-              <span class="history-card__kcal-value">{{ Math.round(item.macros.calories) }}</span>
+              <span class="history-card__kcal-value">{{ Math.round(item.macros.calories ?? 0) }}</span>
               <span class="history-card__kcal-unit">kcal</span>
             </p>
           </div>

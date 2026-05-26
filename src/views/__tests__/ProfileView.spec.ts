@@ -187,9 +187,9 @@ describe('ProfileView', () => {
     await flushPromises()
 
     const section = wrapper.find('[data-testid="macros-section"]')
-    expect(section.text()).toMatch(/profil biom[ée]trique incomplet/i)
-    expect(section.text()).toContain('weight_kg')
-    expect(section.text()).toContain('height_cm')
+    expect(section.text()).toMatch(/quelques\s+infos|biom[ée]trie/i)
+    expect(section.text()).toContain('Poids (kg)')
+    expect(section.text()).toContain('Taille (cm)')
   })
 
   it('submitting the nutrition goals form issues PUT with the form values', async () => {

@@ -237,8 +237,8 @@ describe('mealAnalysisApi', () => {
     expect(headers['Content-Type']).toBeUndefined()
     expect(init.body).toBeInstanceOf(FormData)
     const body = init.body as FormData
-    expect(body.get('file')).toBeInstanceOf(File)
-    expect((body.get('file') as File).name).toBe('meal.png')
+    expect(body.get('photo')).toBeInstanceOf(File)
+    expect((body.get('photo') as File).name).toBe('meal.png')
     expect(result).toEqual(ANALYZE_PAYLOAD)
   })
 

@@ -47,19 +47,19 @@ function formatBudget(value: number): string {
             <ul class="meal-slot__macros" aria-label="Macronutriments">
               <li>
                 <span class="meal-slot__macro-key">kcal</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.calories) }}</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.calories ?? 0) }}</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">P</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.protein_g) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.protein_g ?? 0) }}g</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">G</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.carbs_g) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.carbs_g ?? 0) }}g</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">L</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.fat_g) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.fat_g ?? 0) }}g</span>
               </li>
             </ul>
 

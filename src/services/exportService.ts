@@ -238,7 +238,7 @@ function renderMacrosStats(macros: AnalysisExportInput['macros']): string {
   const fiber = macros.fiber_g ?? '—'
   return `
     <div class="doc-stats">
-      <div class="doc-stat"><div class="doc-stat-label">Calories</div><div class="doc-stat-value">${escapeHtml(Math.round(macros.calories))}</div></div>
+      <div class="doc-stat"><div class="doc-stat-label">Calories</div><div class="doc-stat-value">${escapeHtml(Math.round(macros.calories ?? 0))}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Protéines (g)</div><div class="doc-stat-value">${escapeHtml(macros.protein_g)}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Glucides (g)</div><div class="doc-stat-value">${escapeHtml(macros.carbs_g)}</div></div>
       <div class="doc-stat"><div class="doc-stat-label">Lipides (g)</div><div class="doc-stat-value">${escapeHtml(macros.fat_g)}</div></div>
@@ -326,7 +326,7 @@ function renderMeal(label: string, meal: Meal): string {
         <span class="plan-meal-name">${escapeHtml(meal.name)}</span>
       </div>
       <div class="plan-meal-meta">
-        <span>${escapeHtml(Math.round(macros.calories))} kcal</span>
+        <span>${escapeHtml(Math.round(macros.calories ?? 0))} kcal</span>
         <span>P ${escapeHtml(macros.protein_g)} g</span>
         <span>G ${escapeHtml(macros.carbs_g)} g</span>
         <span>L ${escapeHtml(macros.fat_g)} g</span>

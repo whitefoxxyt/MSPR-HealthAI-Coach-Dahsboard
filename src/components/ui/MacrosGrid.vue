@@ -2,11 +2,11 @@
 import { computed } from 'vue'
 
 interface MacrosShape {
-  calories: number | null
-  protein_g: number | null
-  carbs_g: number | null
-  fat_g: number | null
-  fiber_g: number | null
+  calories?: number | null
+  protein_g?: number | null
+  carbs_g?: number | null
+  fat_g?: number | null
+  fiber_g?: number | null
 }
 
 const props = defineProps<{
