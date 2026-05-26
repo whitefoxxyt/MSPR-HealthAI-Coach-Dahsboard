@@ -31,7 +31,9 @@ function totalSessions(program: WorkoutProgram): number {
 }
 
 function totalDurationLabel(program: WorkoutProgram): string {
-  const minutes = totalSessions(program) * program.duration_min_per_session
+  const perSession = program.duration_min_per_session
+  if (!perSession) return '-'
+  const minutes = totalSessions(program) * perSession
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   if (m === 0) return `${h}h`

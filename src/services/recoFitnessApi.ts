@@ -57,8 +57,8 @@ export interface WorkoutProgram {
   duration_weeks: number
   scoring_strategy: ScoringStrategy
   tier_at_generation: EntitlementTier
-  health_goal_at_generation: HealthGoalFitness
-  duration_min_per_session: number
+  health_goal_at_generation?: HealthGoalFitness
+  duration_min_per_session?: number
   weeks: ProgramWeek[]
   created_at: string
 }
