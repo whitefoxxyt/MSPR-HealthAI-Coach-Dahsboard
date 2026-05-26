@@ -46,8 +46,8 @@ const navItems = [
   { name: 'meal-analysis', to: '/meal-analysis', icon: '◐', label: 'Analyse repas' },
   { name: 'meal-plan', to: '/meal-plan', icon: '◑', label: 'Plan repas' },
   { name: 'fitness-program', to: '/fitness-program', icon: '◉', label: 'Programme fitness' },
-  { name: 'profile', to: '/profil', icon: '✦', label: 'Profil' },
   { name: 'settings', to: '/parametres', icon: '⚙', label: 'Paramètres' },
+  { name: 'profile', to: '/profil', icon: '✦', label: 'Profil' },
 ]
 
 async function handleLogout() {
@@ -62,9 +62,9 @@ async function handleLogout() {
 
     <!-- Mobile topbar -->
     <header class="mobile-topbar" role="banner">
-      <RouterLink to="/" class="brand brand--compact" aria-label="VITAL — accueil">
-        <span class="brand__mark" aria-hidden="true">V</span>
-        <span class="brand__name">VITAL</span>
+      <RouterLink to="/" class="brand brand--compact" aria-label="HealthAI Coach — accueil">
+        <span class="brand__mark" aria-hidden="true">H</span>
+        <span class="brand__name">HealthAI Coach</span>
       </RouterLink>
       <button
         type="button"
@@ -88,11 +88,11 @@ async function handleLogout() {
       aria-label="Navigation principale"
     >
       <div class="sidebar__head">
-        <RouterLink to="/" class="brand" aria-label="VITAL — accueil">
-          <span class="brand__mark" aria-hidden="true">V</span>
+        <RouterLink to="/" class="brand" aria-label="HealthAI Coach — accueil">
+          <span class="brand__mark" aria-hidden="true">H</span>
           <div class="brand__group">
-            <span class="brand__name">VITAL</span>
-            <span class="brand__tag">Coach IA — Nutrition · Performance</span>
+            <span class="brand__name">HealthAI Coach</span>
+            <span class="brand__tag">Nutrition · Performance</span>
           </div>
         </RouterLink>
       </div>
@@ -248,9 +248,9 @@ async function handleLogout() {
 
 .brand__name {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.04em;
 }
 
 .brand__tag {

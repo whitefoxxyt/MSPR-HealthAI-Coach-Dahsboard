@@ -15,7 +15,7 @@ function createTestRouter() {
       {
         path: '/login',
         name: 'login',
-        component: { template: '<div data-testid="login">Connexion à VITAL</div>' },
+        component: { template: '<div data-testid="login">Connexion à HealthAI Coach</div>' },
         meta: { authPage: true },
       },
       {
@@ -54,7 +54,7 @@ describe('App', () => {
     const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Connexion à VITAL')
+    expect(wrapper.text()).toContain('Connexion à HealthAI Coach')
     expect(wrapper.text()).not.toContain('HealthAI Admin')
     expect(wrapper.text()).not.toContain('Espace administration')
   })
@@ -72,7 +72,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Espace administration')
   })
 
-  it('wraps user routes in the UserLayout (VITAL brand visible)', async () => {
+  it('wraps user routes in the UserLayout (HealthAI Coach brand visible)', async () => {
     const router = createTestRouter()
     await router.push('/')
     await router.isReady()
@@ -81,6 +81,6 @@ describe('App', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Home content')
-    expect(wrapper.text()).toContain('VITAL')
+    expect(wrapper.text()).toContain('HealthAI Coach')
   })
 })

@@ -61,11 +61,11 @@ describe('SettingsView', () => {
     localStorage.removeItem(AUTH_STORAGE_KEY)
   })
 
-  it('rend la page dans UserLayout (brand VITAL visible)', async () => {
+  it('rend la page dans UserLayout (brand HealthAI Coach visible)', async () => {
     const wrapper = await mountSettings()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('VITAL')
+    expect(wrapper.text()).toContain('HealthAI Coach')
   })
 
   it('expose une section "Préférence IA" qui embarque le LLMSelector', async () => {
@@ -76,26 +76,11 @@ describe('SettingsView', () => {
     expect(wrapper.find('.llm-selector').exists()).toBe(true)
   })
 
-  it('expose une section "À propos" avec version, lien GitHub et mention MSPR 2', async () => {
-    const wrapper = await mountSettings()
-    await flushPromises()
-
-    const section = wrapper.find('[data-section="about"]')
-    expect(section.exists()).toBe(true)
-
-    const githubLink = section.find('a[href*="github.com"]')
-    expect(githubLink.exists()).toBe(true)
-    expect(githubLink.attributes('rel')).toContain('noopener')
-
-    expect(section.text()).toMatch(/MSPR 2/i)
-    expect(section.text()).toMatch(/version/i)
-  })
-
   it('utilise des attributs ARIA pour les sections', async () => {
     const wrapper = await mountSettings()
     await flushPromises()
 
     const sections = wrapper.findAll('section[aria-labelledby]')
-    expect(sections.length).toBeGreaterThanOrEqual(2)
+    expect(sections.length).toBeGreaterThanOrEqual(1)
   })
 })

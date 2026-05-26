@@ -87,7 +87,7 @@ const shortcuts: Shortcut[] = [
 
     <p class="lead">
       Hello <span class="lead__name">{{ firstName || 'à toi' }}</span>.
-      VITAL analyse tes repas, planifie tes menus, et adapte tes séances à ton corps.
+      HealthAI Coach analyse tes repas, planifie tes menus, et adapte tes séances à ton corps.
       <em>Tout commence ici.</em>
     </p>
 

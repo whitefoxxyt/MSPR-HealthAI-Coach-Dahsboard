@@ -9,6 +9,7 @@ const EXERCISE = {
   equipment: ['barbell', 'bench'],
   difficulty: 'intermediate',
   category: 'compound',
+  gif_url: null,
 }
 
 describe('WorkoutCard', () => {

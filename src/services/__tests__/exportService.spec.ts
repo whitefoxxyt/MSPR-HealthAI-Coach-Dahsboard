@@ -133,6 +133,7 @@ const programFixture: WorkoutProgram = {
           equipment: ['barre'],
           difficulty: 'intermediate',
           category: 'force',
+          gif_url: null,
         },
         {
           id: 2,
@@ -141,6 +142,7 @@ const programFixture: WorkoutProgram = {
           equipment: ['barre', 'banc'],
           difficulty: 'intermediate',
           category: 'force',
+          gif_url: null,
         },
       ],
     ],

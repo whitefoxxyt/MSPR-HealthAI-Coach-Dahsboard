@@ -2,8 +2,8 @@
   <div class="auth-page">
     <aside class="auth-aside" aria-hidden="true">
       <div class="auth-aside__brand">
-        <span class="auth-aside__mark">V</span>
-        <span class="auth-aside__name">VITAL</span>
+        <span class="auth-aside__mark">H</span>
+        <span class="auth-aside__name">HealthAI Coach</span>
       </div>
       <p class="auth-aside__eyebrow">Coach IA — Nutrition · Performance</p>
       <h2 class="auth-aside__pitch">
@@ -20,7 +20,7 @@
 
     <section class="auth-card" aria-labelledby="auth-title">
       <header class="auth-header">
-        <p class="auth-eyebrow">VITAL · MSPR 2</p>
+        <p class="auth-eyebrow">HealthAI Coach · MSPR 2</p>
         <h1 id="auth-title" class="auth-title">{{ panelTitle }}</h1>
         <p class="auth-subtitle">{{ panelSubtitle }}</p>
       </header>
@@ -242,9 +242,8 @@ async function submitPasswordReset() {
   align-items: center;
   gap: var(--sp-sm);
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
 }
 
 .auth-aside__mark {

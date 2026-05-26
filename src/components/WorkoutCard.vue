@@ -26,40 +26,50 @@ const difficultyVariant = computed<'mint' | 'sky' | 'coral'>(() => {
 
 <template>
   <article class="workout-card" data-testid="workout-card">
-    <header class="workout-card__head">
-      <span class="workout-card__position" aria-hidden="true">{{ positionLabel }}</span>
-      <div class="workout-card__title-group">
-        <h4 class="workout-card__name">{{ props.exercise.name }}</h4>
-        <p v-if="props.exercise.category" class="workout-card__category">
-          {{ props.exercise.category }}
-        </p>
-      </div>
-      <AppBadge :variant="difficultyVariant" size="sm">{{ props.exercise.difficulty }}</AppBadge>
-    </header>
+    <figure v-if="props.exercise.gif_url" class="workout-card__media">
+      <img
+        :src="props.exercise.gif_url"
+        :alt="`Démonstration : ${props.exercise.name}`"
+        class="workout-card__gif"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+    <div class="workout-card__body">
+      <header class="workout-card__head">
+        <span class="workout-card__position" aria-hidden="true">{{ positionLabel }}</span>
+        <div class="workout-card__title-group">
+          <h4 class="workout-card__name">{{ props.exercise.name }}</h4>
+          <p v-if="props.exercise.category" class="workout-card__category">
+            {{ props.exercise.category }}
+          </p>
+        </div>
+        <AppBadge :variant="difficultyVariant" size="sm">{{ props.exercise.difficulty }}</AppBadge>
+      </header>
 
-    <dl class="workout-card__meta">
-      <div class="workout-card__row">
-        <dt class="workout-card__row-label">Muscles ciblés</dt>
-        <dd class="workout-card__row-value workout-card__row-value--chips">
-          <span
-            v-for="muscle in props.exercise.target_muscles"
-            :key="muscle"
-            class="workout-card__chip"
-          >{{ muscle }}</span>
-        </dd>
-      </div>
-      <div class="workout-card__row">
-        <dt class="workout-card__row-label">Équipement</dt>
-        <dd class="workout-card__row-value">{{ equipmentLabel }}</dd>
-      </div>
-    </dl>
+      <dl class="workout-card__meta">
+        <div class="workout-card__row">
+          <dt class="workout-card__row-label">Muscles ciblés</dt>
+          <dd class="workout-card__row-value workout-card__row-value--chips">
+            <span
+              v-for="muscle in props.exercise.target_muscles"
+              :key="muscle"
+              class="workout-card__chip"
+            >{{ muscle }}</span>
+          </dd>
+        </div>
+        <div class="workout-card__row">
+          <dt class="workout-card__row-label">Équipement</dt>
+          <dd class="workout-card__row-value">{{ equipmentLabel }}</dd>
+        </div>
+      </dl>
+    </div>
   </article>
 </template>
 
 <style scoped>
 .workout-card {
   display: flex;
-  flex-direction: column;
   gap: var(--sp-md);
   padding: var(--sp-md) var(--sp-lg);
   background: var(--c-onyx);
@@ -73,6 +83,32 @@ const difficultyVariant = computed<'mint' | 'sky' | 'coral'>(() => {
 .workout-card:hover {
   transform: translateY(-1px);
   border-color: rgba(200, 255, 71, 0.35);
+}
+
+.workout-card__media {
+  margin: 0;
+  flex-shrink: 0;
+  width: 112px;
+  height: 112px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: rgba(245, 240, 235, 0.06);
+  align-self: center;
+}
+
+.workout-card__gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.workout-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
 }
 
 .workout-card__head {
@@ -169,6 +205,15 @@ const difficultyVariant = computed<'mint' | 'sky' | 'coral'>(() => {
 }
 
 @media (max-width: 640px) {
+  .workout-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workout-card__media {
+    width: 100%;
+    height: 180px;
+    align-self: stretch;
+  }
   .workout-card__row {
     grid-template-columns: 1fr;
     gap: 0.25rem;

@@ -10,6 +10,7 @@ function exercise(id: number) {
     equipment: ['dumbbell'],
     difficulty: 'intermediate',
     category: 'compound',
+    gif_url: null,
   }
 }
 

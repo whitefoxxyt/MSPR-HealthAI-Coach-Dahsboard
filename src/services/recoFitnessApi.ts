@@ -45,6 +45,7 @@ export interface ExerciseInProgram {
   equipment: string[]
   difficulty: string
   category: string | null
+  gif_url: string | null
 }
 
 export type ProgramSession = ExerciseInProgram[]
