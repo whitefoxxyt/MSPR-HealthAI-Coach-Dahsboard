@@ -18,7 +18,7 @@
       </ul>
     </aside>
 
-    <section class="auth-card" aria-labelledby="auth-title">
+    <main class="auth-card" aria-labelledby="auth-title">
       <header class="auth-header">
         <p class="auth-eyebrow">HealthAI Coach · MSPR 2</p>
         <h1 id="auth-title" class="auth-title">{{ panelTitle }}</h1>
@@ -116,7 +116,7 @@
           {{ authStore.loading ? 'Envoi...' : 'Envoyer le lien de réinitialisation' }}
         </button>
       </form>
-    </section>
+    </main>
   </div>
 </template>
 
