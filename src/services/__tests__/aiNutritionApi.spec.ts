@@ -515,26 +515,26 @@ describe('mealPlanApi', () => {
   })
 
   describe('listMealPlans', () => {
-    const SAMPLE_SUMMARY = {
-      id: 'plan-1',
-      created_at: '2026-05-20T14:32:00Z',
-      health_goal: 'muscle_gain',
-      diet_type: 'omnivore',
-      duration_days: 3,
-      total_budget_eur: 36.0,
+    // Le backend renvoie MealPlanHistoryItem ({ id: int, objective, constraints,
+    // plan, generated_at, llm_backend_used }) ; on verifie que l'adaptateur
+    // produit bien le shape MealPlanSummary attendu par les views.
+    const RAW_BACKEND_ITEM = {
+      id: 1,
+      objective: 'muscle_gain',
+      constraints: { diet_type: 'omnivore', duration_days: 3 },
+      plan: { days: SAMPLE_PLAN.days, fallback: false },
+      generated_at: '2026-05-20T14:32:00Z',
       llm_backend_used: 'ollama',
-      days: SAMPLE_PLAN.days,
     }
-
-    const SAMPLE_LIST = {
-      items: [SAMPLE_SUMMARY],
+    const RAW_BACKEND_LIST = {
+      items: [RAW_BACKEND_ITEM],
       total: 1,
       limit: 10,
       offset: 0,
     }
 
     it('GETs /api/v1/meal-plans/me with bearer auth and limit/offset query params', async () => {
-      fetchSpy.mockResolvedValueOnce(jsonResponse(SAMPLE_LIST))
+      fetchSpy.mockResolvedValueOnce(jsonResponse(RAW_BACKEND_LIST))
 
       const result = await mealPlanApi.listMealPlans(10, 0)
 
@@ -545,11 +545,21 @@ describe('mealPlanApi', () => {
           headers: expect.objectContaining({ Authorization: 'Bearer jwt-test-token' }),
         }),
       )
-      expect(result).toEqual(SAMPLE_LIST)
+      expect(result.total).toBe(1)
+      expect(result.items).toHaveLength(1)
+      expect(result.items[0]).toMatchObject({
+        id: '1',
+        created_at: '2026-05-20T14:32:00Z',
+        health_goal: 'muscle_gain',
+        diet_type: 'omnivore',
+        duration_days: 3,
+        llm_backend_used: 'ollama',
+      })
+      expect(result.items[0]!.days).toEqual(SAMPLE_PLAN.days)
     })
 
     it('passes through arbitrary positive limit/offset values in the URL', async () => {
-      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...SAMPLE_LIST, limit: 20, offset: 40 }))
+      fetchSpy.mockResolvedValueOnce(jsonResponse({ ...RAW_BACKEND_LIST, limit: 20, offset: 40 }))
 
       await mealPlanApi.listMealPlans(20, 40)
 

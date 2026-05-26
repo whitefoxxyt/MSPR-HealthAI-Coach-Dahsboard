@@ -60,8 +60,8 @@ function formatDate(iso: string): string {
   return DATE_FORMATTER.format(d)
 }
 
-function formatBudget(value: number): string {
-  return value.toFixed(2).replace(/\.?0+$/, '')
+function formatBudget(value: number | null | undefined): string {
+  return (value ?? 0).toFixed(2).replace(/\.?0+$/, '')
 }
 
 function healthGoalLabel(goal: string | null): string {

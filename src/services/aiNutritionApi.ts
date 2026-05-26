@@ -280,8 +280,52 @@ export const mealPlanApi = {
         headers: authHeaders(),
       },
     )
-    return parseJsonOrThrow<MealPlanListResponse>(response)
+    // Le backend renvoie MealPlanHistoryItem ({ id, objective, constraints, plan,
+    // generated_at }) ; le front consomme MealPlanSummary. On adapte ici pour
+    // garder l'interface stable cote views/stores.
+    const raw = await parseJsonOrThrow<RawMealPlanListResponse>(response)
+    return {
+      total: raw.total,
+      limit: raw.limit,
+      offset: raw.offset,
+      items: raw.items.map(adaptHistoryItem),
+    }
   },
+}
+
+interface RawMealPlanHistoryItem {
+  id: number
+  objective: string | null
+  constraints: Record<string, unknown>
+  plan: { days?: DayPlan[]; [k: string]: unknown }
+  generated_at: string
+  llm_backend_used?: string
+}
+
+interface RawMealPlanListResponse {
+  items: RawMealPlanHistoryItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+function adaptHistoryItem(item: RawMealPlanHistoryItem): MealPlanSummary {
+  const c = item.constraints ?? {}
+  const totalBudget = (item.plan?.days ?? []).reduce(
+    (sum, day) =>
+      sum + (day.meals ?? []).reduce((dayTotal, m) => dayTotal + (m.est_budget_eur ?? 0), 0),
+    0,
+  )
+  return {
+    id: String(item.id),
+    created_at: item.generated_at,
+    health_goal: (item.objective as HealthGoal | null) ?? null,
+    diet_type: ((c.diet_type as DietType | string | undefined) ?? 'omnivore') as DietType,
+    duration_days: (c.duration_days as number | undefined) ?? (item.plan?.days?.length ?? 0),
+    total_budget_eur: Number(totalBudget.toFixed(2)),
+    llm_backend_used: (item.llm_backend_used as LLMBackend | undefined) ?? 'ollama',
+    days: item.plan?.days ?? [],
+  }
 }
 
 export { ApiError }

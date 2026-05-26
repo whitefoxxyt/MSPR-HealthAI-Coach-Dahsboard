@@ -30,27 +30,33 @@ function seedAuthSession() {
 
 const SAMPLE_MEAL = {
   name: 'Porridge banane',
-  macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9, fiber_g: null },
+  macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9 },
   ingredients: ['flocons avoine', 'banane', 'lait'],
-  budget_eur: 1.8,
+  est_budget_eur: 1.8,
   prep_time_min: 10,
 }
 
 const SAMPLE_DAYS = [
   {
     day: 1,
-    breakfast: SAMPLE_MEAL,
-    lunch: { ...SAMPLE_MEAL, name: 'Bowl quinoa' },
-    dinner: { ...SAMPLE_MEAL, name: 'Saumon vapeur' },
+    meals: [
+      SAMPLE_MEAL,
+      { ...SAMPLE_MEAL, name: 'Bowl quinoa' },
+      { ...SAMPLE_MEAL, name: 'Saumon vapeur' },
+    ],
   },
   {
     day: 2,
-    breakfast: { ...SAMPLE_MEAL, name: 'Pancakes' },
-    lunch: { ...SAMPLE_MEAL, name: 'Salade thon' },
-    dinner: { ...SAMPLE_MEAL, name: 'Poulet riz' },
+    meals: [
+      { ...SAMPLE_MEAL, name: 'Pancakes' },
+      { ...SAMPLE_MEAL, name: 'Salade thon' },
+      { ...SAMPLE_MEAL, name: 'Poulet riz' },
+    ],
   },
 ]
 
+// Construit la reponse cote backend (MealPlanHistoryItem) ; le client API
+// listMealPlans la transforme en MealPlanSummary cote front via adaptHistoryItem.
 function summary(overrides: Partial<{
   id: string
   created_at: string
@@ -59,15 +65,25 @@ function summary(overrides: Partial<{
   duration_days: number
   total_budget_eur: number
 }> = {}) {
+  const numericId = Number((overrides.id ?? 'plan-1').replace(/\D/g, '')) || 1
+  // Ajuster est_budget_eur des SAMPLE_DAYS pour que total = total_budget_eur attendu.
+  const targetTotal = overrides.total_budget_eur ?? 36
+  const mealsCount = SAMPLE_DAYS.reduce((acc, d) => acc + d.meals.length, 0)
+  const perMeal = mealsCount > 0 ? targetTotal / mealsCount : 0
+  const days = SAMPLE_DAYS.map((d) => ({
+    ...d,
+    meals: d.meals.map((m) => ({ ...m, est_budget_eur: perMeal })),
+  }))
   return {
-    id: overrides.id ?? 'plan-1',
-    created_at: overrides.created_at ?? '2026-05-20T14:32:00Z',
-    health_goal: overrides.health_goal ?? 'muscle_gain',
-    diet_type: overrides.diet_type ?? 'omnivore',
-    duration_days: overrides.duration_days ?? 3,
-    total_budget_eur: overrides.total_budget_eur ?? 36,
+    id: numericId,
+    objective: overrides.health_goal ?? 'muscle_gain',
+    constraints: {
+      diet_type: overrides.diet_type ?? 'omnivore',
+      duration_days: overrides.duration_days ?? 3,
+    },
+    plan: { days, fallback: false },
+    generated_at: overrides.created_at ?? '2026-05-20T14:32:00Z',
     llm_backend_used: 'ollama',
-    days: SAMPLE_DAYS,
   }
 }
 
