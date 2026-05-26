@@ -95,9 +95,9 @@ const analysisFixture: MealAnalysisHistoryItem = {
 }
 
 const mealBase = {
-  macros: { calories: 500, protein_g: 30, carbs_g: 50, fat_g: 18, fiber_g: 4 },
+  macros: { calories: 500, protein_g: 30, carbs_g: 50, fat_g: 18 },
   ingredients: ['ingrédient'],
-  budget_eur: 3.5,
+  est_budget_eur: 3.5,
   prep_time_min: 15,
 }
 
@@ -107,9 +107,11 @@ const planResponseFixture: MealPlanResponse = {
   days: [
     {
       day: 1,
-      breakfast: { name: 'Porridge', ...mealBase },
-      lunch: { name: 'Salade poulet', ...mealBase },
-      dinner: { name: 'Saumon riz', ...mealBase },
+      meals: [
+        { name: 'Porridge', ...mealBase },
+        { name: 'Salade poulet', ...mealBase },
+        { name: 'Saumon riz', ...mealBase },
+      ],
     },
   ],
 }
@@ -235,7 +237,7 @@ describe('buildPlanJson', () => {
     const json = buildPlanJson(planSummaryFixture)
     const parsed = JSON.parse(json)
     expect(parsed.total_budget_eur).toBe(42.5)
-    expect(parsed.days[0].breakfast.name).toBe('Porridge')
+    expect(parsed.days[0].meals[0].name).toBe('Porridge')
   })
 })
 

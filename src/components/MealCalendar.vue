@@ -5,18 +5,23 @@ defineProps<{
   days: DayPlan[]
 }>()
 
-const MEAL_SLOTS: Array<{ key: 'breakfast' | 'lunch' | 'dinner'; label: string; testid: string }> = [
-  { key: 'breakfast', label: 'Petit-déjeuner', testid: 'meal-breakfast' },
-  { key: 'lunch', label: 'Déjeuner', testid: 'meal-lunch' },
-  { key: 'dinner', label: 'Dîner', testid: 'meal-dinner' },
-]
+const SLOT_LABELS = ['Petit-déjeuner', 'Déjeuner', 'Dîner', 'Encas', 'Collation']
+const SLOT_TESTIDS = ['meal-breakfast', 'meal-lunch', 'meal-dinner', 'meal-snack', 'meal-extra']
 
-function mealOf(day: DayPlan, key: 'breakfast' | 'lunch' | 'dinner'): Meal {
-  return day[key]
+function labelFor(index: number): string {
+  return SLOT_LABELS[index] ?? `Repas ${index + 1}`
 }
 
-function formatBudget(value: number): string {
-  return value.toFixed(2).replace(/\.?0+$/, '')
+function testidFor(index: number): string {
+  return SLOT_TESTIDS[index] ?? `meal-${index}`
+}
+
+function mealMacros(meal: Meal | undefined) {
+  return meal?.macros ?? { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+}
+
+function formatBudget(value: number | null | undefined): string {
+  return (value ?? 0).toFixed(2).replace(/\.?0+$/, '')
 }
 </script>
 
@@ -36,44 +41,44 @@ function formatBudget(value: number): string {
 
         <ul class="meal-day__slots">
           <li
-            v-for="slot in MEAL_SLOTS"
-            :key="slot.key"
-            :data-testid="slot.testid"
+            v-for="(meal, idx) in day.meals"
+            :key="idx"
+            :data-testid="testidFor(idx)"
             class="meal-slot"
           >
-            <p class="meal-slot__label">{{ slot.label }}</p>
-            <p class="meal-slot__name">{{ mealOf(day, slot.key).name }}</p>
+            <p class="meal-slot__label">{{ labelFor(idx) }}</p>
+            <p class="meal-slot__name">{{ meal.name }}</p>
 
             <ul class="meal-slot__macros" aria-label="Macronutriments">
               <li>
                 <span class="meal-slot__macro-key">kcal</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.calories ?? 0) }}</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealMacros(meal).calories ?? 0) }}</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">P</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.protein_g ?? 0) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealMacros(meal).protein_g ?? 0) }}g</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">G</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.carbs_g ?? 0) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealMacros(meal).carbs_g ?? 0) }}g</span>
               </li>
               <li>
                 <span class="meal-slot__macro-key">L</span>
-                <span class="meal-slot__macro-val">{{ Math.round(mealOf(day, slot.key).macros.fat_g ?? 0) }}g</span>
+                <span class="meal-slot__macro-val">{{ Math.round(mealMacros(meal).fat_g ?? 0) }}g</span>
               </li>
             </ul>
 
             <ul class="meal-slot__ingredients" aria-label="Ingrédients">
               <li
-                v-for="ingredient in mealOf(day, slot.key).ingredients"
+                v-for="ingredient in meal.ingredients"
                 :key="ingredient"
               >{{ ingredient }}</li>
             </ul>
 
             <p class="meal-slot__meta">
-              <span class="meal-slot__meta-budget">{{ formatBudget(mealOf(day, slot.key).budget_eur) }} €</span>
+              <span class="meal-slot__meta-budget">{{ formatBudget(meal.est_budget_eur) }} €</span>
               <span class="meal-slot__meta-sep" aria-hidden="true">·</span>
-              <span class="meal-slot__meta-prep">{{ mealOf(day, slot.key).prep_time_min }} min</span>
+              <span class="meal-slot__meta-prep">{{ meal.prep_time_min }} min</span>
             </p>
           </li>
         </ul>

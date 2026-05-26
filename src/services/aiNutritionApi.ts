@@ -90,15 +90,13 @@ export interface Meal {
   name: string
   macros: MealMacros
   ingredients: string[]
-  budget_eur: number
+  est_budget_eur: number
   prep_time_min: number
 }
 
 export interface DayPlan {
   day: number
-  breakfast: Meal
-  lunch: Meal
-  dinner: Meal
+  meals: Meal[]
 }
 
 export interface MealPlanResponse {

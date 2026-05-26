@@ -316,6 +316,12 @@ function planFilename(plan: PlanExportInput, ext: 'json' | 'pdf'): string {
   return `plan-repas-${id}.${ext}`
 }
 
+const PLAN_SLOT_LABELS = ['Petit-déjeuner', 'Déjeuner', 'Dîner', 'Encas', 'Collation']
+
+function planSlotLabel(index: number): string {
+  return PLAN_SLOT_LABELS[index] ?? `Repas ${index + 1}`
+}
+
 function renderMeal(label: string, meal: Meal): string {
   const ingredients = meal.ingredients.map(escapeHtml).join(', ')
   const macros = meal.macros
@@ -330,7 +336,7 @@ function renderMeal(label: string, meal: Meal): string {
         <span>P ${escapeHtml(macros.protein_g)} g</span>
         <span>G ${escapeHtml(macros.carbs_g)} g</span>
         <span>L ${escapeHtml(macros.fat_g)} g</span>
-        <span>${escapeHtml(meal.budget_eur)} €</span>
+        <span>${escapeHtml(meal.est_budget_eur)} €</span>
         <span>${escapeHtml(meal.prep_time_min)} min</span>
       </div>
       ${ingredients ? `<div class="plan-meal-ingredients">${ingredients}</div>` : ''}
@@ -339,12 +345,11 @@ function renderMeal(label: string, meal: Meal): string {
 }
 
 function renderDay(day: DayPlan): string {
+  const meals = day.meals.map((meal, idx) => renderMeal(planSlotLabel(idx), meal)).join('')
   return `
     <section class="doc-section plan-day">
       <h3>Jour ${escapeHtml(day.day)}</h3>
-      ${renderMeal('Petit-déjeuner', day.breakfast)}
-      ${renderMeal('Déjeuner', day.lunch)}
-      ${renderMeal('Dîner', day.dinner)}
+      ${meals}
     </section>
   `
 }

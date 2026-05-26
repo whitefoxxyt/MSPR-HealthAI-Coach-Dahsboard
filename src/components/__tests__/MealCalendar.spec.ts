@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MealCalendar from '../MealCalendar.vue'
-import type { DayPlan } from '@/services/aiNutritionApi'
+import type { DayPlan, Meal } from '@/services/aiNutritionApi'
 
-function makeMeal(name: string, overrides: Partial<DayPlan['breakfast']> = {}) {
+function makeMeal(name: string, overrides: Partial<Meal> = {}): Meal {
   return {
     name,
-    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9, fiber_g: null },
+    macros: { calories: 420, protein_g: 18, carbs_g: 68, fat_g: 9 },
     ingredients: ['ingrédient A', 'ingrédient B'],
-    budget_eur: 1.8,
+    est_budget_eur: 1.8,
     prep_time_min: 10,
     ...overrides,
   }
@@ -17,15 +17,19 @@ function makeMeal(name: string, overrides: Partial<DayPlan['breakfast']> = {}) {
 const SAMPLE_DAYS: DayPlan[] = [
   {
     day: 1,
-    breakfast: makeMeal('Porridge banane'),
-    lunch: makeMeal('Bowl quinoa', { budget_eur: 4.5, prep_time_min: 25 }),
-    dinner: makeMeal('Saumon vapeur', { budget_eur: 6.2, prep_time_min: 30 }),
+    meals: [
+      makeMeal('Porridge banane'),
+      makeMeal('Bowl quinoa', { est_budget_eur: 4.5, prep_time_min: 25 }),
+      makeMeal('Saumon vapeur', { est_budget_eur: 6.2, prep_time_min: 30 }),
+    ],
   },
   {
     day: 2,
-    breakfast: makeMeal('Pancakes flocons'),
-    lunch: makeMeal('Salade thon'),
-    dinner: makeMeal('Poulet riz brocoli'),
+    meals: [
+      makeMeal('Pancakes flocons'),
+      makeMeal('Salade thon'),
+      makeMeal('Poulet riz brocoli'),
+    ],
   },
 ]
 
