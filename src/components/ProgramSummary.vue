@@ -18,13 +18,20 @@ const totalExercises = computed(() =>
 const totalSessions = computed(() =>
   props.program.weeks.reduce((sum, week) => sum + week.length, 0),
 )
+
+// Les programmes générés avant l'ajout du nom n'en ont pas : repli court
+// sur l'identifiant tronqué plutôt qu'un UUID complet en titre.
+const title = computed(() => {
+  if (props.program.name) return props.program.name
+  return `Programme ${props.program.program_id.slice(0, 8)}`
+})
 </script>
 
 <template>
   <section class="program-summary" data-testid="program-summary">
     <header class="program-summary__head">
       <p class="program-summary__eyebrow">Programme</p>
-      <h2 class="program-summary__title">{{ props.program.program_id }}</h2>
+      <h2 class="program-summary__title">{{ title }}</h2>
       <AppBadge variant="acid" size="md">{{ props.tag }}</AppBadge>
     </header>
 

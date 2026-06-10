@@ -54,6 +54,8 @@ export type ProgramWeek = ProgramSession[]
 export interface WorkoutProgram {
   program_id: string
   user_id: string
+  /** Nom lisible généré par le backend, absent sur les programmes antérieurs. */
+  name?: string | null
   duration_weeks: number
   scoring_strategy: ScoringStrategy
   tier_at_generation: EntitlementTier

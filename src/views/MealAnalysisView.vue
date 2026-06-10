@@ -124,6 +124,19 @@ const showResult = computed(
 
 const confidencePct = (n: number) => `${Math.round(n * 100)}%`
 
+// Macros vides (aliment sans valeurs nutritionnelles) : on l'explique au lieu
+// de laisser une grille de tirets.
+const macrosEmpty = computed(() => {
+  const macros = store.analysis?.macros
+  return !macros || Object.keys(macros).length === 0
+})
+
+// Warnings nutritionnels du backend (valeurs estimées ou indisponibles).
+// Le warning technique meal_type a sa propre UX via le sélecteur de repas.
+const nutritionWarnings = computed(() =>
+  (store.analysis?.warnings ?? []).filter((w) => !w.startsWith('meal_type')),
+)
+
 onBeforeUnmount(() => {
   stopCooldown()
   clearPreview()
@@ -274,7 +287,23 @@ onBeforeUnmount(() => {
           <header class="block__sub">
             <p class="block__eyebrow">Macros estimées</p>
           </header>
-          <MacrosGrid :macros="store.analysis.macros" />
+          <p
+            v-if="macrosEmpty"
+            data-testid="macros-empty-notice"
+            class="result__hint"
+            role="status"
+          >
+            Valeurs nutritionnelles indisponibles pour cet aliment : les macros
+            ne peuvent pas être estimées sur cette photo.
+          </p>
+          <MacrosGrid v-else :macros="store.analysis.macros" />
+          <ul
+            v-if="nutritionWarnings.length"
+            data-testid="nutrition-warnings"
+            class="result__warnings"
+          >
+            <li v-for="w in nutritionWarnings" :key="w">{{ w }}</li>
+          </ul>
           <p
             v-if="store.analysis.profile_completion_required"
             class="result__hint"
@@ -470,6 +499,18 @@ onBeforeUnmount(() => {
 
 .result__hint-link:hover {
   color: var(--c-acid-dark);
+}
+
+.result__warnings {
+  margin: 0;
+  padding: var(--sp-sm) var(--sp-lg);
+  list-style: none;
+  background: rgba(255, 196, 71, 0.14);
+  border: 1px solid rgba(214, 158, 38, 0.4);
+  border-radius: var(--r-md);
+  color: var(--c-onyx);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .result__image {

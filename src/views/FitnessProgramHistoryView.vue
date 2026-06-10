@@ -159,7 +159,7 @@ onMounted(() => {
                 <AppBadge size="sm">{{ tierLabel(program.tier_at_generation) }}</AppBadge>
               </header>
 
-              <p class="history-card__id">{{ program.program_id }}</p>
+              <p class="history-card__id">{{ program.name || `Programme ${program.program_id.slice(0, 8)}` }}</p>
 
               <dl class="history-card__stats">
                 <div class="history-card__stat">

@@ -51,6 +51,7 @@ function exercise(id: number, name: string) {
 const PROGRAM = {
   program_id: 'prog-abc-123',
   user_id: 'user-1',
+  name: 'Programme force, 4 semaines, niveau intermédiaire',
   duration_weeks: 4,
   scoring_strategy: 'hybrid_rank_fusion',
   tier_at_generation: 'premium',
@@ -173,7 +174,8 @@ describe('FitnessProgramView', () => {
 
     const summary = wrapper.find('[data-testid="program-summary"]')
     expect(summary.exists()).toBe(true)
-    expect(summary.text()).toContain('prog-abc-123')
+    // Le titre affiche le nom genere par le backend, plus l'UUID brut.
+    expect(summary.text()).toContain('Programme force, 4 semaines, niveau intermédiaire')
 
     const cards = wrapper.findAll('[data-testid="workout-card"]')
     expect(cards.length).toBe(3)
