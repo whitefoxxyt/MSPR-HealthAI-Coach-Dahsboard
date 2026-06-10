@@ -127,6 +127,11 @@ const showResult = computed(
 
 const confidencePct = (n: number) => `${Math.round(n * 100)}%`
 
+// Sous 30 % de confiance, la detection est trop incertaine pour etre
+// presentee au meme niveau que le plat principal.
+const UNCERTAIN_THRESHOLD = 0.3
+const isUncertain = (n: number) => n < UNCERTAIN_THRESHOLD
+
 // Macros vides (aliment sans valeurs nutritionnelles) : on l'explique au lieu
 // de laisser une grille de tirets.
 const macrosEmpty = computed(() => {
@@ -279,8 +284,16 @@ onBeforeUnmount(() => {
               v-for="(food, idx) in store.analysis.detected_foods"
               :key="(food.label || food.name || '') + idx"
               class="foods__item"
+              :class="{ 'foods__item--uncertain': isUncertain(food.confidence) }"
             >
-              <span class="foods__name">{{ food.label || food.name }}</span>
+              <span class="foods__name">
+                {{ food.label || food.name }}
+                <em
+                  v-if="isUncertain(food.confidence)"
+                  class="foods__uncertain-tag"
+                  data-testid="uncertain-tag"
+                >incertain</em>
+              </span>
               <span class="foods__confidence">{{ confidencePct(food.confidence) }}</span>
             </li>
           </ul>
@@ -548,6 +561,22 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--c-gray-600);
+}
+
+.foods__item--uncertain {
+  opacity: 0.6;
+}
+
+.foods__uncertain-tag {
+  margin-left: var(--sp-xs);
+  padding: 0.1rem 0.45rem;
+  background: rgba(255, 196, 71, 0.25);
+  border-radius: var(--r-sm);
+  font-size: 0.6875rem;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-onyx);
 }
 
 .history-link {
