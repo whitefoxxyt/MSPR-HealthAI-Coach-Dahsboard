@@ -299,6 +299,17 @@ onMounted(() => {
         <MealCalendar :days="mealPlanStore.currentPlan.days" />
 
         <footer data-testid="meal-plan-footer" class="meal-plan__footer">
+          <p
+            v-if="mealPlanStore.currentPlan.from_cache"
+            data-testid="meal-plan-cache-note"
+            class="meal-plan__cache-note"
+            role="status"
+          >
+            Plan identique servi depuis le cache : avec les mêmes paramètres,
+            l'offre gratuite réutilise le plan généré ces 7 derniers jours.
+            Modifie un paramètre (objectif, régime, durée, budget) pour en
+            obtenir un nouveau.
+          </p>
           <p class="meal-plan__footer-line">
             <span class="meal-plan__footer-label">Moteur</span>
             <span class="meal-plan__footer-value">{{ mealPlanStore.currentPlan.llm_backend_used }}</span>
@@ -484,6 +495,18 @@ onMounted(() => {
   background: #ffffff;
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-soft);
+}
+
+.meal-plan__cache-note {
+  flex-basis: 100%;
+  margin: 0;
+  padding: var(--sp-sm) var(--sp-md);
+  background: rgba(255, 196, 71, 0.14);
+  border: 1px solid rgba(214, 158, 38, 0.4);
+  border-radius: var(--r-md);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--c-onyx);
 }
 
 .meal-plan__footer-line {

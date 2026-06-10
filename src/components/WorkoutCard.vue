@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import type { ExerciseInProgram } from '@/services/recoFitnessApi'
+import { formatExerciseName } from '@/utils/exerciseName'
 
 const props = defineProps<{
   exercise: ExerciseInProgram
@@ -9,6 +10,8 @@ const props = defineProps<{
 }>()
 
 const positionLabel = computed(() => String(props.position).padStart(2, '0'))
+
+const displayName = computed(() => formatExerciseName(props.exercise.name))
 
 const equipmentLabel = computed(() =>
   props.exercise.equipment.length > 0
@@ -29,7 +32,7 @@ const difficultyVariant = computed<'mint' | 'sky' | 'coral'>(() => {
     <figure v-if="props.exercise.gif_url" class="workout-card__media">
       <img
         :src="props.exercise.gif_url"
-        :alt="`Démonstration : ${props.exercise.name}`"
+        :alt="`Démonstration : ${displayName}`"
         class="workout-card__gif"
         loading="lazy"
         decoding="async"
@@ -39,7 +42,7 @@ const difficultyVariant = computed<'mint' | 'sky' | 'coral'>(() => {
       <header class="workout-card__head">
         <span class="workout-card__position" aria-hidden="true">{{ positionLabel }}</span>
         <div class="workout-card__title-group">
-          <h4 class="workout-card__name">{{ props.exercise.name }}</h4>
+          <h4 class="workout-card__name">{{ displayName }}</h4>
           <p v-if="props.exercise.category" class="workout-card__category">
             {{ props.exercise.category }}
           </p>

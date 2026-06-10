@@ -103,6 +103,8 @@ export interface MealPlanResponse {
   days: DayPlan[]
   llm_backend_used: LLMBackend
   total_budget_eur: number
+  /** Plan servi depuis le cache 7 j (offre gratuite, mêmes paramètres). */
+  from_cache?: boolean
 }
 
 export interface MealPlanRequest {
