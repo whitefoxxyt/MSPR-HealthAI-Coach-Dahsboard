@@ -12,6 +12,18 @@ describe('Meal analysis', () => {
     cy.visit('/login')
     cy.seedSession('user')
 
+    // Sans ce mock, la vue considere le profil incomplet et affiche l'EmptyState
+    // a la place de la dropzone.
+    cy.intercept('GET', `${AI_NUTRITION_BASE_URL}/api/v1/me/macros`, {
+      statusCode: 200,
+      body: {
+        profile_completion_required: false,
+        missing_fields: [],
+        tdee: 2200,
+        macros: { calories: 2200, protein_g: 130, carbs_g: 250, fat_g: 70 },
+      },
+    }).as('getMacros')
+
     cy.intercept('POST', `${AI_NUTRITION_BASE_URL}/api/v1/analyze-meal`, (req) => {
       req.reply({
         statusCode: 200,
