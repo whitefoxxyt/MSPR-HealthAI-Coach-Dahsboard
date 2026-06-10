@@ -34,11 +34,12 @@ describe('Fitness program generation', () => {
     cy.get('[data-testid="program-day-0-0"]').within(() => {
       cy.contains('Jour 1').should('be.visible')
       cy.get('[data-testid="workout-card"]').should('have.length', 2)
-      cy.contains('Developpe couche haltere').should('be.visible')
-      cy.contains('Rowing haltere').should('be.visible')
+      // Les noms d'exercices sont affiches en Title Case par formatExerciseName.
+      cy.contains('Developpe Couche Haltere').should('be.visible')
+      cy.contains('Rowing Haltere').should('be.visible')
     })
     cy.get('[data-testid="program-day-0-1"]').within(() => {
-      cy.contains('Squat goblet').should('be.visible')
+      cy.contains('Squat Goblet').should('be.visible')
     })
 
     cy.get('[data-testid="new-program-cta"]').should('be.visible')
