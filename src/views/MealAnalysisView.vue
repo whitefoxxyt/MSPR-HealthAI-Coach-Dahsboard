@@ -111,6 +111,9 @@ const errorMessage = computed(() => {
   if (err.status === NETWORK_ERROR_STATUS || err.status >= 500) {
     return 'Le service AI Nutrition est indisponible. Réessaie dans un instant.'
   }
+  if (err.status === 422) {
+    return "L'IA n'a pas reconnu d'aliment sur cette photo. Essaie une photo nette d'un plat préparé, cadré de près et bien éclairé."
+  }
   return `Impossible d'analyser ce repas (HTTP ${err.status}).`
 })
 

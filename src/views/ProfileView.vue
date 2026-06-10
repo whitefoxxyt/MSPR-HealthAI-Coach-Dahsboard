@@ -70,15 +70,20 @@ const EXPERIENCE_LEVEL_OPTIONS: Array<{ value: ExperienceLevel; label: string }>
   { value: 'advanced', label: 'Avancé' },
 ]
 
+// Valeurs alignées sur le vocabulaire equipments du catalogue ExerciseDB
+// (table exercises) : toute autre valeur ne matche aucun exercice côté
+// Reco-Fitness. Le poids du corps est toujours disponible, pas une option.
 const EQUIPMENT_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'dumbbell', label: 'Haltères' },
-  { value: 'bench', label: 'Banc' },
   { value: 'barbell', label: 'Barre' },
+  { value: 'ez barbell', label: 'Barre EZ' },
   { value: 'kettlebell', label: 'Kettlebell' },
-  { value: 'resistance_band', label: 'Élastiques' },
-  { value: 'pull_up_bar', label: 'Barre de traction' },
-  { value: 'treadmill', label: 'Tapis de course' },
-  { value: 'bike', label: 'Vélo' },
+  { value: 'cable', label: 'Poulie / câble' },
+  { value: 'leverage machine', label: 'Machine guidée' },
+  { value: 'smith machine', label: 'Machine Smith' },
+  { value: 'band', label: 'Élastiques' },
+  { value: 'stability ball', label: 'Swiss ball' },
+  { value: 'weighted', label: 'Lest (gilet, disque)' },
 ]
 
 const LIMITATION_OPTIONS: Array<{ value: string; label: string }> = [
